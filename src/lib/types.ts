@@ -18,7 +18,7 @@ export interface ContaPlataforma {
   id: ID;
   empresaId: ID;
   plataformaId: ID;
-  apelido?: string; // ex: "Loja Costa Shopee Oficial"
+  apelido?: string;
 }
 
 export interface Modelo {
@@ -46,6 +46,18 @@ export interface Motivo {
   nome: string;
 }
 
+/** Item individual dentro de uma devolução. Uma devolução pode ter N itens
+ *  (ex.: pedido com calça legging + short, ou mesmo modelo em cores diferentes). */
+export interface DevolucaoItem {
+  id: ID;
+  modeloId: ID;
+  pecaId: ID;
+  cor: string;
+  tamanho: string;
+  quantidade: number;
+  valor: number; // valor unitário do produto
+}
+
 export interface Devolucao {
   id: ID;
   createdAt: string; // ISO
@@ -54,15 +66,10 @@ export interface Devolucao {
   plataformaId: ID;
   pedidoId: string;
   devolucaoId: string;
-  modeloId: ID;
-  pecaId: ID;
-  cor: string;
-  tamanho: string;
   motivoId: ID;
-  quantidade: number;
-  valor: number; // valor real do produto
   status: ReturnStatus;
-  /** valor recuperado quando status muda para resolved após disputa */
+  /** valor total recuperado quando a disputa é ganha */
   valorRecuperado?: number;
   notas?: string;
+  itens: DevolucaoItem[];
 }

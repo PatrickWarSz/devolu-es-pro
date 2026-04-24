@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Calendar, Trophy, X } from "lucide-react";
-import { fmtBRL, fmtDate, daysBetween } from "@/lib/format";
+import { ShieldAlert, Calendar, Trophy, X, Package } from "lucide-react";
+import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 import type { Devolucao } from "@/lib/types";
@@ -41,7 +41,7 @@ export default function Disputas() {
   );
 
   const stats = useMemo(() => {
-    const valorRisco = disputas.reduce((s, d) => s + d.valor * d.quantidade, 0);
+    const valorRisco = disputas.reduce((s, d) => s + valorTotal(d), 0);
     const maisAntiga = disputas[0]?.createdAt;
     return {
       total: disputas.length,
@@ -80,7 +80,7 @@ export default function Disputas() {
           value={stats.total}
           tone="warning"
           icon={<ShieldAlert className="h-4 w-4" />}
-          sub="registros pendentes"
+          sub="pedidos pendentes"
         />
         <KpiCard
           label="Valor em risco"
@@ -117,63 +117,90 @@ export default function Disputas() {
             {disputas.map((d) => {
               const dias = daysBetween(d.createdAt);
               const urgente = dias >= 5;
+              const total = valorTotal(d);
+              const qtd = quantidadeTotal(d);
+              const principal = d.itens[0];
+              const restante = d.itens.length - 1;
               return (
-                <li key={d.id} className="flex flex-wrap items-center gap-4 px-4 py-3.5">
-                  <div className="flex-1 min-w-[260px]">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">
-                        {lookup(modelos, d.modeloId)} · {lookup(pecas, d.pecaId)}
-                      </p>
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-medium tabular",
-                          urgente
-                            ? "bg-destructive-soft text-destructive-soft-foreground"
-                            : "bg-muted text-muted-foreground",
+                <li key={d.id} className="px-4 py-3.5">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex-1 min-w-[260px]">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium">
+                          {principal ? lookup(modelos, principal.modeloId) : "—"}
+                          {principal && (
+                            <span className="text-muted-foreground"> · {lookup(pecas, principal.pecaId)}</span>
+                          )}
+                        </p>
+                        {restante > 0 && (
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground inline-flex items-center gap-1">
+                            <Package className="h-2.5 w-2.5" />
+                            +{restante} {restante === 1 ? "item" : "itens"}
+                          </span>
                         )}
-                      >
-                        {dias}d
-                      </span>
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-medium tabular",
+                            urgente
+                              ? "bg-destructive-soft text-destructive-soft-foreground"
+                              : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {dias}d
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        <span className="font-mono">{d.devolucaoId || d.pedidoId}</span> ·{" "}
+                        {lookup(empresas, d.empresaId)} · {lookup(plataformas, d.plataformaId)} ·{" "}
+                        {lookup(motivos, d.motivoId)} · {qtd} un.
+                      </p>
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      <span className="font-mono">{d.devolucaoId || d.pedidoId}</span> ·{" "}
-                      {lookup(empresas, d.empresaId)} · {lookup(plataformas, d.plataformaId)} ·{" "}
-                      {lookup(motivos, d.motivoId)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-warning tabular min-w-[80px] text-right">
+                        {fmtBRL(total)}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 border-success/40 bg-success-soft text-success-soft-foreground hover:bg-success-soft/80"
+                        onClick={() => {
+                          setWinning(d);
+                          setValorRec(String(total));
+                        }}
+                      >
+                        <Trophy className="h-3.5 w-3.5 mr-1" />
+                        Ganhei
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 border-destructive/40 bg-destructive-soft text-destructive-soft-foreground hover:bg-destructive-soft/80"
+                        onClick={() => {
+                          setStatus(d.id, "loss");
+                          toast({
+                            title: "Perda registrada",
+                            description: `${fmtBRL(total)} confirmados como perda.`,
+                            variant: "destructive",
+                          });
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        Perdi
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-warning tabular min-w-[80px] text-right">
-                      {fmtBRL(d.valor * d.quantidade)}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 border-success/40 bg-success-soft text-success-soft-foreground hover:bg-success-soft/80"
-                      onClick={() => {
-                        setWinning(d);
-                        setValorRec(String(d.valor * d.quantidade));
-                      }}
-                    >
-                      <Trophy className="h-3.5 w-3.5 mr-1" />
-                      Ganhei
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 border-destructive/40 bg-destructive-soft text-destructive-soft-foreground hover:bg-destructive-soft/80"
-                      onClick={() => {
-                        setStatus(d.id, "loss");
-                        toast({
-                          title: "Perda registrada",
-                          description: `${fmtBRL(d.valor * d.quantidade)} confirmados como perda.`,
-                          variant: "destructive",
-                        });
-                      }}
-                    >
-                      <X className="h-3.5 w-3.5 mr-1" />
-                      Perdi
-                    </Button>
-                  </div>
+                  {restante > 0 && (
+                    <div className="mt-2 ml-1 flex flex-wrap gap-1.5">
+                      {d.itens.slice(1).map((it) => (
+                        <span
+                          key={it.id}
+                          className="rounded-md border border-border bg-surface-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                        >
+                          {lookup(modelos, it.modeloId)} · {it.cor || "—"} · {it.quantidade}un · {fmtBRL(it.valor * it.quantidade)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -194,7 +221,8 @@ export default function Disputas() {
           <DialogHeader>
             <DialogTitle>Confirmar disputa ganha</DialogTitle>
             <DialogDescription>
-              Informe o valor recuperado nesta devolução.
+              Informe o valor total recuperado nesta devolução
+              {winning && winning.itens.length > 1 ? ` (${winning.itens.length} itens)` : ""}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
@@ -210,7 +238,7 @@ export default function Disputas() {
             />
             {winning && (
               <p className="text-xs text-muted-foreground">
-                Valor original: {fmtBRL(winning.valor * winning.quantidade)}
+                Valor original: {fmtBRL(valorTotal(winning))}
               </p>
             )}
           </div>

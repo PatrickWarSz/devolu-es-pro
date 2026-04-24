@@ -11,7 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { downloadCSV, fmtBRL, fmtBRLCompact, fmtDate, statusLabel, valorEfetivo } from "@/lib/format";
+import {
+  downloadCSV,
+  fmtBRL,
+  fmtBRLCompact,
+  fmtDate,
+  statusLabel,
+  valorEfetivo,
+  valorTotal,
+  quantidadeTotal,
+} from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Table,
@@ -21,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, TrendingDown, TrendingUp, Activity, Percent } from "lucide-react";
+import { Download, TrendingDown, Activity, Percent } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -79,12 +88,8 @@ export default function Dashboard() {
       if (fCompetencia !== ALL && d.competencia !== fCompetencia) return false;
       if (busca) {
         const q = busca.toLowerCase();
-        const txt = [
-          d.pedidoId,
-          d.devolucaoId,
-          lookup(modelos, d.modeloId),
-          lookup(empresas, d.empresaId),
-        ]
+        const modelosTxt = d.itens.map((it) => lookup(modelos, it.modeloId)).join(" ");
+        const txt = [d.pedidoId, d.devolucaoId, modelosTxt, lookup(empresas, d.empresaId)]
           .join(" ")
           .toLowerCase();
         if (!txt.includes(q)) return false;
@@ -94,17 +99,30 @@ export default function Dashboard() {
   }, [devolucoes, fEmpresa, fPlataforma, fStatus, fMotivo, fCompetencia, busca, modelos, empresas]);
 
   const stats = useMemo(() => {
-    const total = filtradas.reduce((s, d) => s + d.quantidade, 0);
+    // Conta por DEVOLUÇÃO (header), soma por ITEM
+    const totalDevolucoes = filtradas.length;
+    const totalItens = filtradas.reduce((s, d) => s + quantidadeTotal(d), 0);
     const valorPerda = filtradas
       .filter((d) => d.status === "loss")
-      .reduce((s, d) => s + d.valor * d.quantidade, 0);
+      .reduce((s, d) => s + valorTotal(d), 0);
     const valorRecuperado = filtradas
       .filter((d) => d.status === "resolved")
-      .reduce((s, d) => s + (d.valorRecuperado ?? d.valor) * d.quantidade, 0);
+      .reduce((s, d) => s + (d.valorRecuperado ?? valorTotal(d)), 0);
     const disputasAbertas = filtradas.filter((d) => d.status === "dispute").length;
-    const totalAvaliado = filtradas.reduce((s, d) => s + d.valor * d.quantidade, 0);
+    const valorEmDisputa = filtradas
+      .filter((d) => d.status === "dispute")
+      .reduce((s, d) => s + valorTotal(d), 0);
+    const totalAvaliado = filtradas.reduce((s, d) => s + valorTotal(d), 0);
     const taxaRecuperacao = totalAvaliado > 0 ? (valorRecuperado / totalAvaliado) * 100 : 0;
-    return { total, valorPerda, valorRecuperado, disputasAbertas, taxaRecuperacao };
+    return {
+      totalDevolucoes,
+      totalItens,
+      valorPerda,
+      valorRecuperado,
+      disputasAbertas,
+      valorEmDisputa,
+      taxaRecuperacao,
+    };
   }, [filtradas]);
 
   const evolucaoMensal = useMemo(() => {
@@ -112,7 +130,7 @@ export default function Dashboard() {
     filtradas.forEach((d) => {
       const key = d.competencia;
       const cur = map.get(key) ?? { mes: key, resolvidas: 0, disputas: 0, perdas: 0 };
-      const v = valorEfetivo(d) * d.quantidade;
+      const v = valorEfetivo(d);
       if (d.status === "resolved") cur.resolvidas += v;
       else if (d.status === "dispute") cur.disputas += v;
       else cur.perdas += v;
@@ -131,7 +149,7 @@ export default function Dashboard() {
     const map = new Map<string, number>();
     filtradas.forEach((d) => {
       const k = lookup(empresas, d.empresaId);
-      map.set(k, (map.get(k) ?? 0) + d.quantidade);
+      map.set(k, (map.get(k) ?? 0) + quantidadeTotal(d));
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
   }, [filtradas, empresas]);
@@ -140,7 +158,7 @@ export default function Dashboard() {
     const map = new Map<string, number>();
     filtradas.forEach((d) => {
       const k = lookup(motivos, d.motivoId);
-      map.set(k, (map.get(k) ?? 0) + d.quantidade);
+      map.set(k, (map.get(k) ?? 0) + quantidadeTotal(d));
     });
     return Array.from(map.entries())
       .map(([name, value]) => ({ name, value }))
@@ -155,27 +173,29 @@ export default function Dashboard() {
   const pageData = ordenadas.slice((pagina - 1) * PAGE, pagina * PAGE);
 
   const exportar = () => {
-    downloadCSV(
-      `devolucoes-${new Date().toISOString().slice(0, 10)}.csv`,
-      filtradas.map((d) => ({
-        ID: d.id,
+    // Exporta uma linha por ITEM, com dados do header repetidos para análise no Excel
+    const rows = filtradas.flatMap((d) =>
+      d.itens.map((it, idx) => ({
+        Devolucao: d.devolucaoId,
+        Pedido: d.pedidoId,
+        Item: idx + 1,
         Data: fmtDate(d.createdAt),
         Competencia: d.competencia,
         Empresa: lookup(empresas, d.empresaId),
         Plataforma: lookup(plataformas, d.plataformaId),
-        Pedido: d.pedidoId,
-        Devolucao: d.devolucaoId,
-        Modelo: lookup(modelos, d.modeloId),
-        Peca: lookup(pecas, d.pecaId),
-        Cor: d.cor,
-        Tamanho: d.tamanho,
+        Modelo: lookup(modelos, it.modeloId),
+        Peca: lookup(pecas, it.pecaId),
+        Cor: it.cor,
+        Tamanho: it.tamanho,
         Motivo: lookup(motivos, d.motivoId),
-        Quantidade: d.quantidade,
-        Valor: d.valor,
+        Quantidade: it.quantidade,
+        ValorUnitario: it.valor,
+        Subtotal: it.valor * it.quantidade,
         ValorRecuperado: d.valorRecuperado ?? "",
         Status: statusLabel[d.status],
       })),
     );
+    downloadCSV(`devolucoes-${new Date().toISOString().slice(0, 10)}.csv`, rows);
   };
 
   const limparFiltros = () => {
@@ -250,9 +270,9 @@ export default function Dashboard() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Devoluções"
-          value={stats.total}
+          value={stats.totalDevolucoes}
           icon={<Activity className="h-4 w-4" />}
-          sub={`${filtradas.length} registros`}
+          sub={`${stats.totalItens} itens no total`}
         />
         <KpiCard
           label="Valor de perda"
@@ -265,11 +285,7 @@ export default function Dashboard() {
           label="Disputas em aberto"
           value={stats.disputasAbertas}
           tone="warning"
-          sub={fmtBRL(
-            filtradas
-              .filter((d) => d.status === "dispute")
-              .reduce((s, d) => s + d.valor * d.quantidade, 0),
-          ) + " em risco"}
+          sub={fmtBRL(stats.valorEmDisputa) + " em risco"}
         />
         <KpiCard
           label="Taxa de recuperação"
@@ -309,7 +325,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Por empresa" subtitle="Volume de devoluções">
+        <ChartCard title="Por empresa" subtitle="Volume de itens devolvidos">
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
@@ -338,7 +354,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Principais motivos" subtitle="Top motivos de devolução" className="lg:col-span-3">
+        <ChartCard title="Principais motivos" subtitle="Top motivos de devolução (por itens)" className="lg:col-span-3">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={porMotivo} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
@@ -370,7 +386,7 @@ export default function Dashboard() {
           <div>
             <h2 className="text-sm font-medium">Relatório integrado</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {filtradas.length} registros · página {pagina} de {totalPaginas}
+              {filtradas.length} devoluções · página {pagina} de {totalPaginas}
             </p>
           </div>
           <Input
@@ -388,40 +404,52 @@ export default function Dashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[70px]">Data</TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Plataforma</TableHead>
+                <TableHead>Empresa · Plataforma</TableHead>
                 <TableHead>Pedido</TableHead>
-                <TableHead>Modelo · Peça</TableHead>
+                <TableHead>Itens</TableHead>
                 <TableHead>Motivo</TableHead>
                 <TableHead className="text-right">Qtd</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="text-right">Total</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageData.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell className="text-xs text-muted-foreground tabular">{fmtDate(d.createdAt)}</TableCell>
-                  <TableCell className="text-sm font-medium">{lookup(empresas, d.empresaId)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{lookup(plataformas, d.plataformaId)}</TableCell>
-                  <TableCell className="font-mono text-xs">{d.pedidoId || "—"}</TableCell>
-                  <TableCell className="text-sm">
-                    {lookup(modelos, d.modeloId)}{" "}
-                    <span className="text-muted-foreground">· {lookup(pecas, d.pecaId)}</span>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{lookup(motivos, d.motivoId)}</TableCell>
-                  <TableCell className="text-right tabular text-sm">{d.quantidade}</TableCell>
-                  <TableCell className="text-right tabular text-sm font-medium">
-                    {fmtBRL(valorEfetivo(d) * d.quantidade)}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={d.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {pageData.map((d) => {
+                const principal = d.itens[0];
+                const restante = d.itens.length - 1;
+                return (
+                  <TableRow key={d.id}>
+                    <TableCell className="text-xs text-muted-foreground tabular">{fmtDate(d.createdAt)}</TableCell>
+                    <TableCell className="text-sm">
+                      <div className="font-medium">{lookup(empresas, d.empresaId)}</div>
+                      <div className="text-xs text-muted-foreground">{lookup(plataformas, d.plataformaId)}</div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{d.pedidoId || "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {principal ? lookup(modelos, principal.modeloId) : "—"}
+                      {principal && (
+                        <span className="text-muted-foreground"> · {lookup(pecas, principal.pecaId)}</span>
+                      )}
+                      {restante > 0 && (
+                        <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          +{restante}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{lookup(motivos, d.motivoId)}</TableCell>
+                    <TableCell className="text-right tabular text-sm">{quantidadeTotal(d)}</TableCell>
+                    <TableCell className="text-right tabular text-sm font-medium">
+                      {d.status === "dispute" ? "R$ 1,00" : fmtBRL(valorEfetivo(d))}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={d.status} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {pageData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
                     Nenhum registro encontrado com esses filtros.
                   </TableCell>
                 </TableRow>
@@ -499,5 +527,3 @@ function ChartCard({
     </div>
   );
 }
-
-void TrendingUp;
