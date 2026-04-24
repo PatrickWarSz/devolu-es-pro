@@ -3,13 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { QuickSelect } from "@/components/QuickSelect";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import type { ReturnStatus } from "@/lib/types";
@@ -190,7 +184,7 @@ export default function Registrar() {
     <div className="space-y-6">
       <PageHeader
         title="Registrar devolução"
-        description="Otimizado para entrada rápida. Use Tab para navegar e ⌘/Ctrl + Enter para salvar."
+        description="Use ↑/↓ para navegar opções, Enter para selecionar e avançar, Tab para pular. ⌘/Ctrl + Enter salva."
         actions={
           <Button variant="ghost" size="sm" onClick={() => setForm(empty())}>
             Limpar
@@ -211,21 +205,13 @@ export default function Registrar() {
           <div className="grid gap-x-4 gap-y-4 p-5 md:grid-cols-2">
             {/* Empresa */}
             <Field label="Empresa" required>
-              <Select
+              <QuickSelect
+                triggerRef={firstFieldRef}
                 value={form.empresaId}
                 onValueChange={(v) => set("empresaId", v)}
-              >
-                <SelectTrigger ref={firstFieldRef as never}>
-                  <SelectValue placeholder="Selecione a empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Selecione a empresa"
+                options={empresas.map((e) => ({ value: e.id, label: e.nome }))}
+              />
             </Field>
 
             {/* Plataforma — depende da empresa */}
@@ -238,30 +224,19 @@ export default function Registrar() {
                   : "Selecione uma empresa primeiro"
               }
             >
-              <Select
+              <QuickSelect
                 value={form.plataformaId}
                 onValueChange={(v) => set("plataformaId", v)}
                 disabled={!form.empresaId}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      form.empresaId
-                        ? plataformasDisponiveis.length
-                          ? "Selecione a plataforma"
-                          : "Nenhuma plataforma vinculada"
-                        : "—"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {plataformasDisponiveis.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={
+                  form.empresaId
+                    ? plataformasDisponiveis.length
+                      ? "Selecione a plataforma"
+                      : "Nenhuma plataforma vinculada"
+                    : "—"
+                }
+                options={plataformasDisponiveis.map((p) => ({ value: p.id, label: p.nome }))}
+              />
             </Field>
 
             <Field label="Mês / Competência">
@@ -314,79 +289,49 @@ export default function Registrar() {
             </Field>
 
             <Field label="Modelo" required>
-              <Select value={form.modeloId} onValueChange={(v) => set("modeloId", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o modelo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modelos.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.modeloId}
+                onValueChange={(v) => set("modeloId", v)}
+                placeholder="Selecione o modelo"
+                options={modelos.map((m) => ({ value: m.id, label: m.nome }))}
+              />
             </Field>
 
             <Field label="Peça com defeito" required>
-              <Select value={form.pecaId} onValueChange={(v) => set("pecaId", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a peça" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pecas.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.pecaId}
+                onValueChange={(v) => set("pecaId", v)}
+                placeholder="Selecione a peça"
+                options={pecas.map((p) => ({ value: p.id, label: p.nome }))}
+              />
             </Field>
 
             <Field label="Cor">
-              <Select value={form.cor} onValueChange={(v) => set("cor", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cores.map((c) => (
-                    <SelectItem key={c.id} value={c.nome}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.cor}
+                onValueChange={(v) => set("cor", v)}
+                placeholder="Selecione"
+                options={cores.map((c) => ({ value: c.nome, label: c.nome }))}
+              />
             </Field>
 
             <Field label="Tamanho">
-              <Select value={form.tamanho} onValueChange={(v) => set("tamanho", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tamanhos.map((t) => (
-                    <SelectItem key={t.id} value={t.nome}>
-                      {t.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.tamanho}
+                onValueChange={(v) => set("tamanho", v)}
+                placeholder="Selecione"
+                options={tamanhos.map((t) => ({ value: t.nome, label: t.nome }))}
+              />
             </Field>
 
             <div className="md:col-span-2">
               <Field label="Motivo da devolução" required>
-                <Select value={form.motivoId} onValueChange={(v) => set("motivoId", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o motivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {motivos.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <QuickSelect
+                  value={form.motivoId}
+                  onValueChange={(v) => set("motivoId", v)}
+                  placeholder="Selecione o motivo"
+                  options={motivos.map((m) => ({ value: m.id, label: m.nome }))}
+                />
               </Field>
             </div>
 
