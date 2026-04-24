@@ -224,30 +224,19 @@ export default function Registrar() {
                   : "Selecione uma empresa primeiro"
               }
             >
-              <Select
+              <QuickSelect
                 value={form.plataformaId}
                 onValueChange={(v) => set("plataformaId", v)}
                 disabled={!form.empresaId}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      form.empresaId
-                        ? plataformasDisponiveis.length
-                          ? "Selecione a plataforma"
-                          : "Nenhuma plataforma vinculada"
-                        : "—"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {plataformasDisponiveis.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={
+                  form.empresaId
+                    ? plataformasDisponiveis.length
+                      ? "Selecione a plataforma"
+                      : "Nenhuma plataforma vinculada"
+                    : "—"
+                }
+                options={plataformasDisponiveis.map((p) => ({ value: p.id, label: p.nome }))}
+              />
             </Field>
 
             <Field label="Mês / Competência">
