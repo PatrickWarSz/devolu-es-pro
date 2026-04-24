@@ -289,79 +289,49 @@ export default function Registrar() {
             </Field>
 
             <Field label="Modelo" required>
-              <Select value={form.modeloId} onValueChange={(v) => set("modeloId", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o modelo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modelos.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.modeloId}
+                onValueChange={(v) => set("modeloId", v)}
+                placeholder="Selecione o modelo"
+                options={modelos.map((m) => ({ value: m.id, label: m.nome }))}
+              />
             </Field>
 
             <Field label="Peça com defeito" required>
-              <Select value={form.pecaId} onValueChange={(v) => set("pecaId", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a peça" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pecas.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.pecaId}
+                onValueChange={(v) => set("pecaId", v)}
+                placeholder="Selecione a peça"
+                options={pecas.map((p) => ({ value: p.id, label: p.nome }))}
+              />
             </Field>
 
             <Field label="Cor">
-              <Select value={form.cor} onValueChange={(v) => set("cor", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cores.map((c) => (
-                    <SelectItem key={c.id} value={c.nome}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.cor}
+                onValueChange={(v) => set("cor", v)}
+                placeholder="Selecione"
+                options={cores.map((c) => ({ value: c.nome, label: c.nome }))}
+              />
             </Field>
 
             <Field label="Tamanho">
-              <Select value={form.tamanho} onValueChange={(v) => set("tamanho", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tamanhos.map((t) => (
-                    <SelectItem key={t.id} value={t.nome}>
-                      {t.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <QuickSelect
+                value={form.tamanho}
+                onValueChange={(v) => set("tamanho", v)}
+                placeholder="Selecione"
+                options={tamanhos.map((t) => ({ value: t.nome, label: t.nome }))}
+              />
             </Field>
 
             <div className="md:col-span-2">
               <Field label="Motivo da devolução" required>
-                <Select value={form.motivoId} onValueChange={(v) => set("motivoId", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o motivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {motivos.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <QuickSelect
+                  value={form.motivoId}
+                  onValueChange={(v) => set("motivoId", v)}
+                  placeholder="Selecione o motivo"
+                  options={motivos.map((m) => ({ value: m.id, label: m.nome }))}
+                />
               </Field>
             </div>
 
