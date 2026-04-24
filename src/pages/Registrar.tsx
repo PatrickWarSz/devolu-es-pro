@@ -205,21 +205,13 @@ export default function Registrar() {
           <div className="grid gap-x-4 gap-y-4 p-5 md:grid-cols-2">
             {/* Empresa */}
             <Field label="Empresa" required>
-              <Select
+              <QuickSelect
+                triggerRef={firstFieldRef}
                 value={form.empresaId}
                 onValueChange={(v) => set("empresaId", v)}
-              >
-                <SelectTrigger ref={firstFieldRef as never}>
-                  <SelectValue placeholder="Selecione a empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Selecione a empresa"
+                options={empresas.map((e) => ({ value: e.id, label: e.nome }))}
+              />
             </Field>
 
             {/* Plataforma — depende da empresa */}
