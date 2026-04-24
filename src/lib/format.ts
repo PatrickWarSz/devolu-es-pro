@@ -1,4 +1,4 @@
-import type { Devolucao } from "./types";
+import type { Devolucao, DevolucaoItem } from "./types";
 
 export const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", {
@@ -48,10 +48,30 @@ export const statusLabel: Record<Devolucao["status"], string> = {
   loss: "Perda confirmada",
 };
 
+// ============= Helpers de itens =============
+
+/** Quantidade total somando todos os itens */
+export const quantidadeTotal = (d: Devolucao) =>
+  d.itens.reduce((s, it) => s + it.quantidade, 0);
+
+/** Valor bruto total (soma de unitário × qtd de cada item) */
+export const valorTotal = (d: Devolucao) =>
+  d.itens.reduce((s, it) => s + it.valor * it.quantidade, 0);
+
+/** Valor de um único item */
+export const valorItem = (it: DevolucaoItem) => it.valor * it.quantidade;
+
+/**
+ * Valor "efetivo" usado em relatórios financeiros:
+ * - dispute: R$ 1 simbólico (independente do número de itens)
+ * - resolved: valorRecuperado se houver, senão valorTotal
+ * - loss: valorTotal (perda confirmada)
+ */
 export const valorEfetivo = (d: Devolucao) => {
-  if (d.status === "dispute") return 1; // R$ 1 simbólico
-  if (d.status === "loss") return d.valor;
-  return d.valorRecuperado ?? d.valor;
+  if (d.status === "dispute") return 1;
+  const total = valorTotal(d);
+  if (d.status === "loss") return total;
+  return d.valorRecuperado ?? total;
 };
 
 export function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
