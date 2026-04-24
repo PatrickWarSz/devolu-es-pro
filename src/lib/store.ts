@@ -4,6 +4,7 @@ import type {
   ContaPlataforma,
   Cor,
   Devolucao,
+  DevolucaoItem,
   Empresa,
   Modelo,
   Motivo,
@@ -23,6 +24,7 @@ import {
   seedPlataformas,
   seedTamanhos,
 } from "./seed";
+import { valorTotal } from "./format";
 
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -47,7 +49,7 @@ interface Actions {
   deleteDevolucao: (id: string) => void;
   setStatus: (id: string, status: ReturnStatus, valorRecuperado?: number) => void;
 
-  // CRUD genérico para entidades simples
+  // CRUD genérico
   addEmpresa: (nome: string, cnpj?: string) => Empresa;
   updateEmpresa: (id: string, patch: Partial<Empresa>) => void;
   deleteEmpresa: (id: string) => void;
@@ -73,6 +75,43 @@ interface Actions {
   resetSeed: () => void;
 }
 
+/** Migra um registro v1 (campos no nível raiz) para v2 (com array `itens`). */
+type LegacyDevolucao = Devolucao & {
+  modeloId?: string;
+  pecaId?: string;
+  cor?: string;
+  tamanho?: string;
+  quantidade?: number;
+  valor?: number;
+};
+function migrateDevolucao(raw: LegacyDevolucao): Devolucao {
+  if (Array.isArray(raw.itens) && raw.itens.length > 0) return raw as Devolucao;
+  // Registro legado: converte para 1 item
+  const item: DevolucaoItem = {
+    id: uid("itm"),
+    modeloId: raw.modeloId ?? "",
+    pecaId: raw.pecaId ?? "",
+    cor: raw.cor ?? "",
+    tamanho: raw.tamanho ?? "",
+    quantidade: raw.quantidade ?? 1,
+    valor: raw.valor ?? 0,
+  };
+  return {
+    id: raw.id,
+    createdAt: raw.createdAt,
+    competencia: raw.competencia,
+    empresaId: raw.empresaId,
+    plataformaId: raw.plataformaId,
+    pedidoId: raw.pedidoId,
+    devolucaoId: raw.devolucaoId,
+    motivoId: raw.motivoId,
+    status: raw.status,
+    valorRecuperado: raw.valorRecuperado,
+    notas: raw.notas,
+    itens: [item],
+  };
+}
+
 export const useStore = create<State & Actions>()(
   persist(
     (set, get) => ({
@@ -92,6 +131,7 @@ export const useStore = create<State & Actions>()(
           ...d,
           id: uid("dev"),
           createdAt: new Date().toISOString(),
+          itens: d.itens.map((it) => ({ ...it, id: it.id || uid("itm") })),
         };
         set((s) => ({ devolucoes: [novo, ...s.devolucoes] }));
         return novo;
@@ -104,20 +144,20 @@ export const useStore = create<State & Actions>()(
         set((s) => ({ devolucoes: s.devolucoes.filter((d) => d.id !== id) })),
       setStatus: (id, status, valorRecuperado) =>
         set((s) => ({
-          devolucoes: s.devolucoes.map((d) =>
-            d.id === id
-              ? {
-                  ...d,
-                  status,
-                  valorRecuperado:
-                    status === "resolved"
-                      ? valorRecuperado ?? d.valor
-                      : status === "loss"
-                      ? 0
-                      : d.valorRecuperado,
-                }
-              : d,
-          ),
+          devolucoes: s.devolucoes.map((d) => {
+            if (d.id !== id) return d;
+            const total = valorTotal(d);
+            return {
+              ...d,
+              status,
+              valorRecuperado:
+                status === "resolved"
+                  ? valorRecuperado ?? total
+                  : status === "loss"
+                  ? 0
+                  : d.valorRecuperado,
+            };
+          }),
         })),
 
       addEmpresa: (nome, cnpj) => {
@@ -210,6 +250,18 @@ export const useStore = create<State & Actions>()(
     }),
     {
       name: "devolucoes-pro-v1",
+      version: 2,
+      migrate: (persistedState, version) => {
+        const s = persistedState as Partial<State> | undefined;
+        if (!s) return s as unknown as State & Actions;
+        if (version < 2 && Array.isArray(s.devolucoes)) {
+          return {
+            ...s,
+            devolucoes: (s.devolucoes as LegacyDevolucao[]).map(migrateDevolucao),
+          } as unknown as State & Actions;
+        }
+        return s as unknown as State & Actions;
+      },
     },
   ),
 );
