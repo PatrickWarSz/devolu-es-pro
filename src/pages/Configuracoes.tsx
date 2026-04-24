@@ -1,0 +1,346 @@
+import { useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useStore } from "@/lib/store";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trash2, Plus, Database } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+export default function Configuracoes() {
+  const { toast } = useToast();
+  const resetSeed = useStore((s) => s.resetSeed);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Configurações"
+        description="Gerencie as opções que aparecem nos formulários de registro."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm("Restaurar dados de demonstração? Tudo será sobrescrito.")) {
+                resetSeed();
+                toast({ title: "Dados restaurados ao seed inicial" });
+              }
+            }}
+          >
+            <Database className="h-3.5 w-3.5 mr-1.5" />
+            Restaurar demo
+          </Button>
+        }
+      />
+
+      <Tabs defaultValue="empresas" className="space-y-4">
+        <TabsList className="bg-surface-muted">
+          <TabsTrigger value="empresas">Empresas</TabsTrigger>
+          <TabsTrigger value="plataformas">Plataformas</TabsTrigger>
+          <TabsTrigger value="vinculos">Vínculos</TabsTrigger>
+          <TabsTrigger value="catalogo">Catálogo</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="empresas">
+          <EmpresasPanel />
+        </TabsContent>
+        <TabsContent value="plataformas">
+          <PlataformasPanel />
+        </TabsContent>
+        <TabsContent value="vinculos">
+          <VinculosPanel />
+        </TabsContent>
+        <TabsContent value="catalogo">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <CatalogoPanel
+              title="Modelos"
+              items={useStore.getState().modelos}
+              add={(n) => useStore.getState().addModelo(n)}
+              del={(id) => useStore.getState().deleteModelo(id)}
+              storeKey="modelos"
+            />
+            <CatalogoPanel
+              title="Peças"
+              items={useStore.getState().pecas}
+              add={(n) => useStore.getState().addPeca(n)}
+              del={(id) => useStore.getState().deletePeca(id)}
+              storeKey="pecas"
+            />
+            <CatalogoPanel
+              title="Cores"
+              items={useStore.getState().cores}
+              add={(n) => useStore.getState().addCor(n)}
+              del={(id) => useStore.getState().deleteCor(id)}
+              storeKey="cores"
+            />
+            <CatalogoPanel
+              title="Tamanhos"
+              items={useStore.getState().tamanhos}
+              add={(n) => useStore.getState().addTamanho(n)}
+              del={(id) => useStore.getState().deleteTamanho(id)}
+              storeKey="tamanhos"
+            />
+            <CatalogoPanel
+              title="Motivos"
+              items={useStore.getState().motivos}
+              add={(n) => useStore.getState().addMotivo(n)}
+              del={(id) => useStore.getState().deleteMotivo(id)}
+              storeKey="motivos"
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function EmpresasPanel() {
+  const empresas = useStore((s) => s.empresas);
+  const addEmpresa = useStore((s) => s.addEmpresa);
+  const deleteEmpresa = useStore((s) => s.deleteEmpresa);
+  const [nome, setNome] = useState("");
+  const [cnpj, setCnpj] = useState("");
+
+  return (
+    <div className="rounded-lg border border-border bg-card shadow-xs">
+      <div className="border-b border-border px-4 py-3">
+        <h3 className="text-sm font-medium">Empresas (CNPJs)</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Cada empresa pode ter contas em várias plataformas.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-end gap-2 border-b border-border bg-surface-muted/40 p-3">
+        <div className="flex-1 min-w-[180px]">
+          <label className="text-[11px] font-medium text-muted-foreground">Nome</label>
+          <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Costa Ltda" className="h-8" />
+        </div>
+        <div className="flex-1 min-w-[180px]">
+          <label className="text-[11px] font-medium text-muted-foreground">CNPJ</label>
+          <Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" className="h-8 font-mono" />
+        </div>
+        <Button
+          size="sm"
+          disabled={!nome.trim()}
+          onClick={() => {
+            addEmpresa(nome.trim(), cnpj.trim() || undefined);
+            setNome("");
+            setCnpj("");
+          }}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Adicionar
+        </Button>
+      </div>
+      <ul className="divide-y divide-border">
+        {empresas.map((e) => (
+          <li key={e.id} className="flex items-center justify-between px-4 py-2.5">
+            <div>
+              <p className="text-sm font-medium">{e.nome}</p>
+              {e.cnpj && <p className="text-xs text-muted-foreground font-mono">{e.cnpj}</p>}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              onClick={() => {
+                if (confirm(`Excluir "${e.nome}"? Os vínculos também serão removidos.`))
+                  deleteEmpresa(e.id);
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PlataformasPanel() {
+  const plataformas = useStore((s) => s.plataformas);
+  const addPlataforma = useStore((s) => s.addPlataforma);
+  const deletePlataforma = useStore((s) => s.deletePlataforma);
+  const [nome, setNome] = useState("");
+
+  return (
+    <div className="rounded-lg border border-border bg-card shadow-xs">
+      <div className="border-b border-border px-4 py-3">
+        <h3 className="text-sm font-medium">Plataformas</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">Marketplaces disponíveis no sistema.</p>
+      </div>
+      <div className="flex items-end gap-2 border-b border-border bg-surface-muted/40 p-3">
+        <div className="flex-1">
+          <label className="text-[11px] font-medium text-muted-foreground">Nome</label>
+          <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Magalu" className="h-8" />
+        </div>
+        <Button
+          size="sm"
+          disabled={!nome.trim()}
+          onClick={() => {
+            addPlataforma(nome.trim());
+            setNome("");
+          }}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Adicionar
+        </Button>
+      </div>
+      <ul className="divide-y divide-border">
+        {plataformas.map((p) => (
+          <li key={p.id} className="flex items-center justify-between px-4 py-2.5">
+            <p className="text-sm">{p.nome}</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              onClick={() => {
+                if (confirm(`Excluir "${p.nome}"? Os vínculos serão removidos.`))
+                  deletePlataforma(p.id);
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function VinculosPanel() {
+  const empresas = useStore((s) => s.empresas);
+  const plataformas = useStore((s) => s.plataformas);
+  const contas = useStore((s) => s.contas);
+  const toggleConta = useStore((s) => s.toggleConta);
+
+  const has = (eId: string, pId: string) =>
+    contas.some((c) => c.empresaId === eId && c.plataformaId === pId);
+
+  return (
+    <div className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
+      <div className="border-b border-border px-4 py-3">
+        <h3 className="text-sm font-medium">Vínculos Empresa × Plataforma</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Marque em quais plataformas cada empresa opera. Isso filtra o select no formulário de registro.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-surface-muted/50">
+              <th className="text-left px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+                Empresa
+              </th>
+              {plataformas.map((p) => (
+                <th
+                  key={p.id}
+                  className="text-center px-3 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap"
+                >
+                  {p.nome}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {empresas.map((e) => (
+              <tr key={e.id} className="border-b border-border last:border-0">
+                <td className="px-4 py-2 font-medium">{e.nome}</td>
+                {plataformas.map((p) => {
+                  const active = has(e.id, p.id);
+                  return (
+                    <td key={p.id} className="text-center px-3 py-2">
+                      <button
+                        onClick={() => toggleConta(e.id, p.id)}
+                        className={cn(
+                          "inline-flex h-6 w-6 items-center justify-center rounded border transition-colors",
+                          active
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "bg-surface border-border text-transparent hover:bg-muted",
+                        )}
+                        aria-label={active ? "Remover vínculo" : "Adicionar vínculo"}
+                      >
+                        ✓
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CatalogoPanel({
+  title,
+  storeKey,
+  items: initialItems,
+  add,
+  del,
+}: {
+  title: string;
+  storeKey: keyof ReturnType<typeof useStore.getState>;
+  items: { id: string; nome: string }[];
+  add: (n: string) => void;
+  del: (id: string) => void;
+}) {
+  // re-subscreve para reagir a mudanças
+  const items = useStore((s) => s[storeKey] as { id: string; nome: string }[]);
+  const [nome, setNome] = useState("");
+  void initialItems;
+
+  return (
+    <div className="rounded-lg border border-border bg-card shadow-xs">
+      <div className="border-b border-border px-4 py-2.5">
+        <h3 className="text-sm font-medium">{title}</h3>
+      </div>
+      <div className="flex items-center gap-2 border-b border-border bg-surface-muted/40 p-2">
+        <Input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && nome.trim()) {
+              add(nome.trim());
+              setNome("");
+            }
+          }}
+          placeholder="Adicionar…"
+          className="h-8 text-sm"
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!nome.trim()}
+          onClick={() => {
+            add(nome.trim());
+            setNome("");
+          }}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <ul className="max-h-72 overflow-y-auto divide-y divide-border">
+        {items.map((it) => (
+          <li key={it.id} className="flex items-center justify-between px-4 py-2 group">
+            <span className="text-sm">{it.nome}</span>
+            <button
+              onClick={() => del(it.id)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+              aria-label="Excluir"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </li>
+        ))}
+        {items.length === 0 && (
+          <li className="px-4 py-3 text-xs text-muted-foreground text-center">
+            Nenhum item.
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
