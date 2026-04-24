@@ -14,7 +14,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useEffect } from "react";
-import { fmtBRL, statusLabel } from "@/lib/format";
+import { fmtBRL, statusLabel, valorTotal } from "@/lib/format";
 import { lookup } from "@/lib/store";
 
 export function AppTopbar() {
@@ -108,25 +108,35 @@ export function AppTopbar() {
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Devoluções recentes">
-            {devolucoes.slice(0, 8).map((d) => (
-              <CommandItem
-                key={d.id}
-                value={`${d.devolucaoId} ${d.pedidoId} ${lookup(modelos, d.modeloId)} ${lookup(empresas, d.empresaId)} ${lookup(plataformas, d.plataformaId)}`}
-                onSelect={() => { navigate("/fila"); setOpen(false); }}
-              >
-                <div className="flex w-full items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">
-                      {d.devolucaoId} · {lookup(modelos, d.modeloId)}
+            {devolucoes.slice(0, 8).map((d) => {
+              const principal = d.itens[0];
+              const restante = d.itens.length - 1;
+              const modeloLabel = principal ? lookup(modelos, principal.modeloId) : "—";
+              return (
+                <CommandItem
+                  key={d.id}
+                  value={`${d.devolucaoId} ${d.pedidoId} ${modeloLabel} ${lookup(empresas, d.empresaId)} ${lookup(plataformas, d.plataformaId)}`}
+                  onSelect={() => { navigate("/fila"); setOpen(false); }}
+                >
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">
+                        {d.devolucaoId} · {modeloLabel}
+                        {restante > 0 && (
+                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            +{restante}
+                          </span>
+                        )}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {lookup(empresas, d.empresaId)} · {lookup(plataformas, d.plataformaId)} · {statusLabel[d.status]}
+                      </div>
                     </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {lookup(empresas, d.empresaId)} · {lookup(plataformas, d.plataformaId)} · {statusLabel[d.status]}
-                    </div>
+                    <span className="text-xs text-muted-foreground tabular">{fmtBRL(valorTotal(d))}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground tabular">{fmtBRL(d.valor)}</span>
-                </div>
-              </CommandItem>
-            ))}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         </CommandList>
       </CommandDialog>
