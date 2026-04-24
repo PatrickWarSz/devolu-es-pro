@@ -57,13 +57,13 @@ const empty = (): FormState => ({
 const statusOptions: { value: ReturnStatus; label: string; Icon: typeof CheckCircle2; cls: string }[] = [
   {
     value: "resolved",
-    label: "Resolvida (R$ real)",
+    label: "Resolvida",
     Icon: CheckCircle2,
     cls: "data-[active=true]:bg-success-soft data-[active=true]:border-success/40 data-[active=true]:text-success-soft-foreground",
   },
   {
     value: "dispute",
-    label: "Em disputa (R$ 1)",
+    label: "Em disputa",
     Icon: AlertCircle,
     cls: "data-[active=true]:bg-warning-soft data-[active=true]:border-warning/40 data-[active=true]:text-warning-soft-foreground",
   },
