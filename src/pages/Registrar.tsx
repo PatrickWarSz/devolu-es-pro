@@ -3,13 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { QuickSelect } from "@/components/QuickSelect";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import type { ReturnStatus } from "@/lib/types";
