@@ -138,14 +138,14 @@ export default function Disputas() {
         <KpiCard
           label="Prazo vencido"
           value={stats.vencidas}
-          tone={stats.vencidas > 0 ? "destructive" : "neutral"}
+          tone={stats.vencidas > 0 ? "destructive" : "default"}
           icon={<AlertTriangle className="h-4 w-4" />}
           sub="verificar agora"
         />
         <KpiCard
           label="Vencendo"
           value={stats.proximas}
-          tone={stats.proximas > 0 ? "warning" : "neutral"}
+          tone={stats.proximas > 0 ? "warning" : "default"}
           icon={<Clock className="h-4 w-4" />}
           sub="≤ 1 dia restante"
         />
