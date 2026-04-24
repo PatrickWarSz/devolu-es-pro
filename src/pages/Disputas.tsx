@@ -14,11 +14,26 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Calendar, Trophy, X, Package } from "lucide-react";
+import { ShieldAlert, Calendar, Trophy, X, Package, Clock, AlertTriangle } from "lucide-react";
 import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
+import { avaliarPrazo, prazoStatusOrder, type PrazoInfo, type PrazoStatus } from "@/lib/disputaPrazo";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 import type { Devolucao } from "@/lib/types";
+
+type ResolucaoKind = "win" | "loss";
+
+interface ResolucaoState {
+  devolucao: Devolucao;
+  kind: ResolucaoKind;
+}
+
+const prazoBadgeCls: Record<PrazoStatus, string> = {
+  ok: "bg-muted text-muted-foreground",
+  proximo: "bg-warning-soft text-warning-soft-foreground border border-warning/30",
+  vencido: "bg-destructive-soft text-destructive-soft-foreground border border-destructive/30",
+  atrasado: "bg-destructive text-destructive-foreground",
+};
 
 export default function Disputas() {
   const devolucoes = useStore((s) => s.devolucoes);
@@ -29,52 +44,90 @@ export default function Disputas() {
   const pecas = useStore((s) => s.pecas);
   const motivos = useStore((s) => s.motivos);
   const { toast } = useToast();
-  const [winning, setWinning] = useState<Devolucao | null>(null);
-  const [valorRec, setValorRec] = useState("");
+
+  const [resolucao, setResolucao] = useState<ResolucaoState | null>(null);
+  const [valorFinal, setValorFinal] = useState("");
 
   const disputas = useMemo(
     () =>
       devolucoes
         .filter((d) => d.status === "dispute")
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-    [devolucoes],
+        .map((d) => ({ d, prazo: avaliarPrazo(d, plataformas) }))
+        .sort((a, b) => {
+          const so = prazoStatusOrder[a.prazo.status] - prazoStatusOrder[b.prazo.status];
+          if (so !== 0) return so;
+          return a.d.createdAt.localeCompare(b.d.createdAt);
+        }),
+    [devolucoes, plataformas],
   );
 
   const stats = useMemo(() => {
-    const valorRisco = disputas.reduce((s, d) => s + valorTotal(d), 0);
-    const maisAntiga = disputas[0]?.createdAt;
+    const valorRisco = disputas.reduce((s, x) => s + valorTotal(x.d), 0);
+    const vencidas = disputas.filter(
+      (x) => x.prazo.status === "vencido" || x.prazo.status === "atrasado",
+    );
+    const proximas = disputas.filter((x) => x.prazo.status === "proximo");
+    const maisAntiga = disputas[disputas.length - 1]?.d.createdAt
+      ? disputas.reduce((acc, x) =>
+          x.d.createdAt < acc.d.createdAt ? x : acc,
+        disputas[0]).d.createdAt
+      : undefined;
     return {
       total: disputas.length,
       valorRisco,
+      vencidas: vencidas.length,
+      proximas: proximas.length,
       maisAntigaDias: maisAntiga ? daysBetween(maisAntiga) : 0,
       maisAntigaData: maisAntiga,
     };
   }, [disputas]);
 
-  const handleWin = () => {
-    if (!winning) return;
-    const v = Number(valorRec);
+  const abrirResolucao = (d: Devolucao, kind: ResolucaoKind) => {
+    setResolucao({ devolucao: d, kind });
+    setValorFinal(String(valorTotal(d)));
+  };
+
+  const fecharResolucao = () => {
+    setResolucao(null);
+    setValorFinal("");
+  };
+
+  const confirmar = () => {
+    if (!resolucao) return;
+    const v = Number(valorFinal);
     if (Number.isNaN(v) || v < 0) {
       toast({ title: "Valor inválido", variant: "destructive" });
       return;
     }
-    setStatus(winning.id, "resolved", v);
-    toast({
-      title: "Disputa ganha 🏆",
-      description: `${fmtBRL(v)} recuperados.`,
-    });
-    setWinning(null);
-    setValorRec("");
+    const total = valorTotal(resolucao.devolucao);
+
+    if (resolucao.kind === "win") {
+      setStatus(resolucao.devolucao.id, "resolved", v);
+      toast({
+        title: "Disputa ganha 🏆",
+        description: `${fmtBRL(v)} recuperados${v !== total ? ` (de ${fmtBRL(total)})` : ""}.`,
+      });
+    } else {
+      // Para perda, gravamos o valor final como valorRecuperado também
+      // (representa o valor "considerado" — útil quando plataforma aplica taxas).
+      setStatus(resolucao.devolucao.id, "loss", v);
+      toast({
+        title: "Perda registrada",
+        description: `${fmtBRL(v)} confirmados como perda${v !== total ? ` (bruto ${fmtBRL(total)})` : ""}.`,
+        variant: "destructive",
+      });
+    }
+    fecharResolucao();
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Disputas em aberto"
-        description="Gerencie casos pendentes. Resolva ou confirme perda."
+        description="Casos pendentes ordenados por prazo. Resolva ou confirme perda quando a plataforma der o resultado."
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Em disputa agora"
           value={stats.total}
@@ -83,24 +136,60 @@ export default function Disputas() {
           sub="pedidos pendentes"
         />
         <KpiCard
+          label="Prazo vencido"
+          value={stats.vencidas}
+          tone={stats.vencidas > 0 ? "destructive" : "neutral"}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          sub="verificar agora"
+        />
+        <KpiCard
+          label="Vencendo"
+          value={stats.proximas}
+          tone={stats.proximas > 0 ? "warning" : "neutral"}
+          icon={<Clock className="h-4 w-4" />}
+          sub="≤ 1 dia restante"
+        />
+        <KpiCard
           label="Valor em risco"
           value={fmtBRL(stats.valorRisco)}
           tone="warning"
-          sub="estimativa total"
-        />
-        <KpiCard
-          label="Mais antiga"
-          value={stats.maisAntigaData ? `${stats.maisAntigaDias}d` : "—"}
+          sub={
+            stats.maisAntigaData
+              ? `mais antiga: ${stats.maisAntigaDias}d (${fmtDate(stats.maisAntigaData)})`
+              : "—"
+          }
           icon={<Calendar className="h-4 w-4" />}
-          sub={stats.maisAntigaData ? `desde ${fmtDate(stats.maisAntigaData)}` : "nenhuma"}
         />
       </div>
+
+      {(stats.vencidas > 0 || stats.proximas > 0) && (
+        <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning-soft-foreground flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium">Há disputas que precisam de verificação</p>
+            <p className="text-xs opacity-90 mt-0.5">
+              {stats.vencidas > 0 && (
+                <>
+                  <strong>{stats.vencidas}</strong> {stats.vencidas === 1 ? "disputa passou" : "disputas passaram"} do prazo da plataforma
+                </>
+              )}
+              {stats.vencidas > 0 && stats.proximas > 0 && " · "}
+              {stats.proximas > 0 && (
+                <>
+                  <strong>{stats.proximas}</strong> {stats.proximas === 1 ? "vence" : "vencem"} em 1 dia ou menos
+                </>
+              )}
+              . Confira o ID do pedido na plataforma e atualize o status.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg border border-border bg-card shadow-xs">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-medium">Casos pendentes</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Ordenados pela disputa mais antiga
+            Ordenados por urgência: vencidas → próximas do prazo → no prazo
           </p>
         </div>
 
@@ -114,9 +203,7 @@ export default function Disputas() {
           </div>
         ) : (
           <ul className="divide-y divide-border">
-            {disputas.map((d) => {
-              const dias = daysBetween(d.createdAt);
-              const urgente = dias >= 5;
+            {disputas.map(({ d, prazo }) => {
               const total = valorTotal(d);
               const qtd = quantidadeTotal(d);
               const principal = d.itens[0];
@@ -138,21 +225,12 @@ export default function Disputas() {
                             +{restante} {restante === 1 ? "item" : "itens"}
                           </span>
                         )}
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-[10px] font-medium tabular",
-                            urgente
-                              ? "bg-destructive-soft text-destructive-soft-foreground"
-                              : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {dias}d
-                        </span>
+                        <PrazoBadge prazo={prazo} />
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         <span className="font-mono">{d.devolucaoId || d.pedidoId}</span> ·{" "}
                         {lookup(empresas, d.empresaId)} · {lookup(plataformas, d.plataformaId)} ·{" "}
-                        {lookup(motivos, d.motivoId)} · {qtd} un.
+                        {lookup(motivos, d.motivoId)} · {qtd} un. · aberta há {prazo.diasAberta}d (prazo {prazo.prazo}d)
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -163,10 +241,7 @@ export default function Disputas() {
                         size="sm"
                         variant="outline"
                         className="h-8 border-success/40 bg-success-soft text-success-soft-foreground hover:bg-success-soft/80"
-                        onClick={() => {
-                          setWinning(d);
-                          setValorRec(String(total));
-                        }}
+                        onClick={() => abrirResolucao(d, "win")}
                       >
                         <Trophy className="h-3.5 w-3.5 mr-1" />
                         Ganhei
@@ -175,14 +250,7 @@ export default function Disputas() {
                         size="sm"
                         variant="outline"
                         className="h-8 border-destructive/40 bg-destructive-soft text-destructive-soft-foreground hover:bg-destructive-soft/80"
-                        onClick={() => {
-                          setStatus(d.id, "loss");
-                          toast({
-                            title: "Perda registrada",
-                            description: `${fmtBRL(total)} confirmados como perda.`,
-                            variant: "destructive",
-                          });
-                        }}
+                        onClick={() => abrirResolucao(d, "loss")}
                       >
                         <X className="h-3.5 w-3.5 mr-1" />
                         Perdi
@@ -209,47 +277,73 @@ export default function Disputas() {
       </div>
 
       <Dialog
-        open={!!winning}
+        open={!!resolucao}
         onOpenChange={(o) => {
-          if (!o) {
-            setWinning(null);
-            setValorRec("");
-          }
+          if (!o) fecharResolucao();
         }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar disputa ganha</DialogTitle>
+            <DialogTitle>
+              {resolucao?.kind === "win"
+                ? "Confirmar disputa ganha"
+                : "Confirmar perda da disputa"}
+            </DialogTitle>
             <DialogDescription>
-              Informe o valor total recuperado nesta devolução
-              {winning && winning.itens.length > 1 ? ` (${winning.itens.length} itens)` : ""}.
+              {resolucao?.kind === "win"
+                ? "Informe o valor total efetivamente recuperado nesta devolução."
+                : "Informe o valor final perdido. Algumas plataformas (ex: Shopee) aplicam taxas que só são definidas após a finalização da disputa."}
+              {resolucao && resolucao.devolucao.itens.length > 1
+                ? ` (${resolucao.devolucao.itens.length} itens)`
+                : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label className="text-xs">Valor recuperado (R$)</Label>
+            <Label className="text-xs">
+              {resolucao?.kind === "win" ? "Valor recuperado (R$)" : "Valor da perda (R$)"}
+            </Label>
             <Input
               type="number"
               step="0.01"
               min={0}
-              value={valorRec}
-              onChange={(e) => setValorRec(e.target.value)}
+              value={valorFinal}
+              onChange={(e) => setValorFinal(e.target.value)}
               autoFocus
               className="tabular"
             />
-            {winning && (
+            {resolucao && (
               <p className="text-xs text-muted-foreground">
-                Valor original: {fmtBRL(valorTotal(winning))}
+                Valor bruto da devolução: {fmtBRL(valorTotal(resolucao.devolucao))}
               </p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setWinning(null)}>
+            <Button variant="ghost" onClick={fecharResolucao}>
               Cancelar
             </Button>
-            <Button onClick={handleWin}>Confirmar recuperação</Button>
+            <Button
+              onClick={confirmar}
+              variant={resolucao?.kind === "loss" ? "destructive" : "default"}
+            >
+              {resolucao?.kind === "win" ? "Confirmar recuperação" : "Confirmar perda"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function PrazoBadge({ prazo }: { prazo: PrazoInfo }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[10px] font-medium tabular inline-flex items-center gap-1",
+        prazoBadgeCls[prazo.status],
+      )}
+    >
+      <Clock className="h-2.5 w-2.5" />
+      {prazo.label}
+    </span>
   );
 }
