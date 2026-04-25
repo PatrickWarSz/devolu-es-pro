@@ -91,6 +91,7 @@ const competencia = (n: number) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
+/** Cria um item de devolução. `valor` é o TOTAL do item (já considerando a quantidade). */
 const item = (
   n: number,
   modeloId: string,
@@ -98,7 +99,7 @@ const item = (
   cor: string,
   tamanho: string,
   quantidade: number,
-  valor: number,
+  valorTotal: number,
 ): DevolucaoItem => ({
   id: id("itm", n),
   modeloId,
@@ -106,7 +107,7 @@ const item = (
   cor,
   tamanho,
   quantidade,
-  valor,
+  valor: valorTotal,
 });
 
 export const seedDevolucoes: Devolucao[] = [
