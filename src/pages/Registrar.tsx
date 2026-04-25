@@ -292,7 +292,11 @@ export default function Registrar() {
               />
             </Field>
 
-            <Field label="ID do Pedido">
+            <Field
+              label="ID do Pedido"
+              required={pedidoObrigatorio}
+              hint={pedidoObrigatorio ? "Necessário para rastrear disputa/perda" : "Opcional"}
+            >
               <Input
                 placeholder="Ex: SHP-991023"
                 value={form.pedidoId}
@@ -301,7 +305,7 @@ export default function Registrar() {
               />
             </Field>
 
-            <Field label="ID da Devolução">
+            <Field label="ID da Devolução" hint="Opcional">
               <Input
                 placeholder="Ex: DEV-00823"
                 value={form.devolucaoId}
@@ -309,6 +313,36 @@ export default function Registrar() {
                 className="font-mono text-sm"
               />
             </Field>
+          </div>
+
+          {/* Status — definido antes dos itens para destravar regras (ID obrigatório, etc.) */}
+          <div className="border-t border-border bg-surface-muted/20 px-5 py-4">
+            <Label className="text-xs font-medium text-muted-foreground">
+              Status da devolução
+            </Label>
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {statusOptions.map((opt) => {
+                const active = form.status === opt.value;
+                const Icon = opt.Icon;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    data-active={active}
+                    data-skip-focus
+                    onClick={() => set("status", opt.value)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-foreground transition-all hover:bg-muted",
+                      opt.cls,
+                      active && "shadow-xs",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="font-medium">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Itens */}
