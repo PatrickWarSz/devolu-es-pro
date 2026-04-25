@@ -165,6 +165,99 @@ export default function Dashboard() {
       .sort((a, b) => b.value - a.value);
   }, [filtradas, motivos]);
 
+  // ============== Análise de Produto ==============
+  // Cruzamentos para entender PORQUÊ um produto está sendo devolvido:
+  // - tamanho (ex: "G está pequeno"), cor (ex: "branco transparente"),
+  // - peça com defeito (quando motivo = defeito).
+
+  /** Top modelos devolvidos com breakdown do motivo principal. */
+  const topModelos = useMemo(() => {
+    type Acc = { qtd: number; motivos: Map<string, number> };
+    const map = new Map<string, Acc>();
+    filtradas.forEach((d) => {
+      const motivoNome = lookup(motivos, d.motivoId);
+      d.itens.forEach((it) => {
+        const k = lookup(modelos, it.modeloId);
+        const cur = map.get(k) ?? { qtd: 0, motivos: new Map() };
+        cur.qtd += it.quantidade;
+        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
+        map.set(k, cur);
+      });
+    });
+    return Array.from(map.entries())
+      .map(([modelo, acc]) => {
+        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
+        return {
+          modelo,
+          qtd: acc.qtd,
+          motivoTop: motivoTop ? motivoTop[0] : "—",
+          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
+        };
+      })
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos, motivos]);
+
+  /** Combinação modelo + tamanho — revela problemas de modelagem (ex: "G pequeno"). */
+  const topModeloTamanho = useMemo(() => {
+    const map = new Map<string, { modelo: string; tamanho: string; qtd: number }>();
+    filtradas.forEach((d) => {
+      d.itens.forEach((it) => {
+        const tam = it.tamanho || "—";
+        const mod = lookup(modelos, it.modeloId);
+        const k = `${mod}__${tam}`;
+        const cur = map.get(k) ?? { modelo: mod, tamanho: tam, qtd: 0 };
+        cur.qtd += it.quantidade;
+        map.set(k, cur);
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos]);
+
+  /** Combinação modelo + cor — revela problemas específicos de cor (ex: branco transparente). */
+  const topModeloCor = useMemo(() => {
+    const map = new Map<string, { modelo: string; cor: string; qtd: number }>();
+    filtradas.forEach((d) => {
+      d.itens.forEach((it) => {
+        const cor = it.cor || "—";
+        const mod = lookup(modelos, it.modeloId);
+        const k = `${mod}__${cor}`;
+        const cur = map.get(k) ?? { modelo: mod, cor, qtd: 0 };
+        cur.qtd += it.quantidade;
+        map.set(k, cur);
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos]);
+
+  /** Peças que voltam com defeito — só considera devoluções cujo motivo contém "defeito". */
+  const topPecasDefeito = useMemo(() => {
+    const motivosDefeito = new Set(
+      motivos.filter((m) => m.nome.toLowerCase().includes("defeito")).map((m) => m.id),
+    );
+    const map = new Map<string, { peca: string; modelo: string; qtd: number }>();
+    filtradas
+      .filter((d) => motivosDefeito.has(d.motivoId))
+      .forEach((d) => {
+        d.itens.forEach((it) => {
+          if (!it.pecaId) return;
+          const peca = lookup(pecas, it.pecaId);
+          const mod = lookup(modelos, it.modeloId);
+          const k = `${mod}__${peca}`;
+          const cur = map.get(k) ?? { peca, modelo: mod, qtd: 0 };
+          cur.qtd += it.quantidade;
+          map.set(k, cur);
+        });
+      });
+    return Array.from(map.values())
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos, motivos, pecas]);
+
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE));
   const ordenadas = useMemo(
     () => [...filtradas].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
