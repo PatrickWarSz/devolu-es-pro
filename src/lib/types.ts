@@ -58,6 +58,22 @@ export interface DevolucaoItem {
   valor: number; // valor unitário do produto
 }
 
+/** Pré-cadastro de pedido que o cliente já postou mas ainda não chegou.
+ *  Quando chega, é convertido em uma Devolucao usando seus dados. */
+export interface PedidoACaminho {
+  id: ID;
+  createdAt: string; // ISO
+  empresaId: ID;
+  plataformaId: ID;
+  pedidoId: string;
+  /** ID da devolução na plataforma (opcional, nem sempre disponível ainda) */
+  devolucaoId?: string;
+  /** Motivo previsto, se o cliente já informou */
+  motivoId?: ID;
+  notas?: string;
+  itens: DevolucaoItem[];
+}
+
 export interface Devolucao {
   id: ID;
   createdAt: string; // ISO

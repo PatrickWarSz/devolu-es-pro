@@ -1,4 +1,4 @@
-import { Sun, Moon, Search } from "lucide-react";
+import { Sun, Moon, Search, Truck } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
@@ -25,11 +25,13 @@ export function AppTopbar() {
   const empresas = useStore((s) => s.empresas);
   const plataformas = useStore((s) => s.plataformas);
   const modelos = useStore((s) => s.modelos);
+  const pedidosACaminho = useStore((s) => s.pedidosACaminho);
 
   const disputaCount = useMemo(
     () => devolucoes.filter((d) => d.status === "dispute").length,
     [devolucoes],
   );
+  const aCaminhoCount = pedidosACaminho.length;
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -40,6 +42,7 @@ export function AppTopbar() {
       if (!open && !["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
         const k = e.key.toLowerCase();
         if (k === "r") navigate("/registrar");
+        if (k === "a") navigate("/a-caminho");
         if (k === "f") navigate("/fila");
         if (k === "d") navigate("/disputas");
         if (k === "b") navigate("/dashboard");
@@ -64,6 +67,16 @@ export function AppTopbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          {aCaminhoCount > 0 && (
+            <button
+              onClick={() => navigate("/a-caminho")}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary tabular hover:bg-primary-soft/80 transition-colors"
+              title="Pedidos a caminho aguardando chegada"
+            >
+              <Truck className="h-3 w-3" />
+              {aCaminhoCount} a caminho
+            </button>
+          )}
           {disputaCount > 0 && (
             <button
               onClick={() => navigate("/disputas")}
@@ -92,6 +105,9 @@ export function AppTopbar() {
           <CommandGroup heading="Navegar">
             <CommandItem onSelect={() => { navigate("/registrar"); setOpen(false); }}>
               Registrar nova devolução
+            </CommandItem>
+            <CommandItem onSelect={() => { navigate("/a-caminho"); setOpen(false); }}>
+              Pedidos a caminho {aCaminhoCount > 0 && `(${aCaminhoCount})`}
             </CommandItem>
             <CommandItem onSelect={() => { navigate("/fila"); setOpen(false); }}>
               Fila do dia

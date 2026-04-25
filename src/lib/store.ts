@@ -9,6 +9,7 @@ import type {
   Modelo,
   Motivo,
   Peca,
+  PedidoACaminho,
   Plataforma,
   ReturnStatus,
   Tamanho,
@@ -39,6 +40,7 @@ interface State {
   tamanhos: Tamanho[];
   motivos: Motivo[];
   devolucoes: Devolucao[];
+  pedidosACaminho: PedidoACaminho[];
   theme: "light" | "dark";
 }
 
@@ -48,6 +50,11 @@ interface Actions {
   updateDevolucao: (id: string, patch: Partial<Devolucao>) => void;
   deleteDevolucao: (id: string) => void;
   setStatus: (id: string, status: ReturnStatus, valorRecuperado?: number) => void;
+
+  // Pedidos a caminho
+  addPedidoACaminho: (p: Omit<PedidoACaminho, "id" | "createdAt">) => PedidoACaminho;
+  updatePedidoACaminho: (id: string, patch: Partial<PedidoACaminho>) => void;
+  deletePedidoACaminho: (id: string) => void;
 
   // CRUD genérico
   addEmpresa: (nome: string, cnpj?: string) => Empresa;
@@ -124,6 +131,7 @@ export const useStore = create<State & Actions>()(
       tamanhos: seedTamanhos,
       motivos: seedMotivos,
       devolucoes: seedDevolucoes,
+      pedidosACaminho: [],
       theme: "light",
 
       addDevolucao: (d) => {
@@ -158,6 +166,27 @@ export const useStore = create<State & Actions>()(
                   : d.valorRecuperado,
             };
           }),
+        })),
+
+      addPedidoACaminho: (p) => {
+        const novo: PedidoACaminho = {
+          ...p,
+          id: uid("pac"),
+          createdAt: new Date().toISOString(),
+          itens: p.itens.map((it) => ({ ...it, id: it.id || uid("itm") })),
+        };
+        set((s) => ({ pedidosACaminho: [novo, ...s.pedidosACaminho] }));
+        return novo;
+      },
+      updatePedidoACaminho: (id, patch) =>
+        set((s) => ({
+          pedidosACaminho: s.pedidosACaminho.map((p) =>
+            p.id === id ? { ...p, ...patch } : p,
+          ),
+        })),
+      deletePedidoACaminho: (id) =>
+        set((s) => ({
+          pedidosACaminho: s.pedidosACaminho.filter((p) => p.id !== id),
         })),
 
       addEmpresa: (nome, cnpj) => {
