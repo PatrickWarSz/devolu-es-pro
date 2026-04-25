@@ -188,6 +188,8 @@ export const useStore = create<State & Actions>()(
         set((s) => ({
           pedidosACaminho: s.pedidosACaminho.filter((p) => p.id !== id),
         })),
+
+      addEmpresa: (nome, cnpj) => {
         const novo: Empresa = { id: uid("emp"), nome, cnpj };
         set((s) => ({ empresas: [...s.empresas, novo] }));
         return novo;
