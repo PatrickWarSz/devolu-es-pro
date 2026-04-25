@@ -473,6 +473,78 @@ export default function Dashboard() {
         </ChartCard>
       </div>
 
+      {/* ============== Análise de Produto ============== */}
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">Análise de produto</h2>
+            <p className="text-xs text-muted-foreground">
+              Cruzamentos para entender por que cada produto está voltando — modelagem, cor, peça defeituosa.
+            </p>
+          </div>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Top 8 de cada
+          </span>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RankingCard
+            title="Modelos mais devolvidos"
+            subtitle="Com o motivo predominante de cada um"
+            icon={<Package className="h-3.5 w-3.5" />}
+            empty="Sem devoluções no recorte atual."
+            rows={topModelos.map((r) => ({
+              key: r.modelo,
+              primary: r.modelo,
+              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
+              value: r.qtd,
+            }))}
+          />
+
+          <RankingCard
+            title="Modelo + Tamanho"
+            subtitle="Indicador de problemas de modelagem"
+            icon={<Ruler className="h-3.5 w-3.5" />}
+            empty="Nenhum item com tamanho informado."
+            accent="warning"
+            rows={topModeloTamanho.map((r) => ({
+              key: `${r.modelo}-${r.tamanho}`,
+              primary: r.modelo,
+              badge: r.tamanho,
+              value: r.qtd,
+            }))}
+          />
+
+          <RankingCard
+            title="Modelo + Cor"
+            subtitle="Para detectar problemas específicos por cor (ex: transparência)"
+            icon={<Palette className="h-3.5 w-3.5" />}
+            empty="Nenhum item com cor informada."
+            accent="info"
+            rows={topModeloCor.map((r) => ({
+              key: `${r.modelo}-${r.cor}`,
+              primary: r.modelo,
+              badge: r.cor,
+              value: r.qtd,
+            }))}
+          />
+
+          <RankingCard
+            title="Peças com defeito"
+            subtitle="Apenas devoluções com motivo de defeito"
+            icon={<Wrench className="h-3.5 w-3.5" />}
+            empty="Nenhuma devolução por defeito com peça informada."
+            accent="destructive"
+            rows={topPecasDefeito.map((r) => ({
+              key: `${r.modelo}-${r.peca}`,
+              primary: r.modelo,
+              secondary: r.peca,
+              value: r.qtd,
+            }))}
+          />
+        </div>
+      </section>
+
       <div className="rounded-lg border border-border bg-card shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div>
