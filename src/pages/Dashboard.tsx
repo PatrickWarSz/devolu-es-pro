@@ -691,3 +691,104 @@ function ChartCard({
     </div>
   );
 }
+
+interface RankingRow {
+  key: string;
+  primary: string;
+  secondary?: string;
+  badge?: string;
+  value: number;
+}
+
+function RankingCard({
+  title,
+  subtitle,
+  icon,
+  rows,
+  empty,
+  accent = "primary",
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  rows: RankingRow[];
+  empty: string;
+  accent?: "primary" | "warning" | "info" | "destructive";
+}) {
+  const max = rows.reduce((m, r) => Math.max(m, r.value), 0);
+  const barCls = {
+    primary: "bg-primary/70",
+    warning: "bg-warning/70",
+    info: "bg-info/70",
+    destructive: "bg-destructive/70",
+  }[accent];
+  const iconWrapCls = {
+    primary: "bg-primary-soft text-primary",
+    warning: "bg-warning-soft text-warning-soft-foreground",
+    info: "bg-info-soft text-info-soft-foreground",
+    destructive: "bg-destructive-soft text-destructive-soft-foreground",
+  }[accent];
+  const badgeCls = {
+    primary: "bg-primary-soft text-primary border-primary/20",
+    warning: "bg-warning-soft text-warning-soft-foreground border-warning/30",
+    info: "bg-info-soft text-info-soft-foreground border-info/30",
+    destructive: "bg-destructive-soft text-destructive-soft-foreground border-destructive/30",
+  }[accent];
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 shadow-xs">
+      <div className="mb-3 flex items-start gap-2.5">
+        {icon && (
+          <div className={"flex h-7 w-7 shrink-0 items-center justify-center rounded-md " + iconWrapCls}>
+            {icon}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-medium leading-tight">{title}</h3>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted-foreground">{empty}</p>
+      ) : (
+        <ol className="space-y-1.5">
+          {rows.map((r, i) => {
+            const pct = max > 0 ? (r.value / max) * 100 : 0;
+            return (
+              <li key={r.key} className="group relative">
+                <div className="relative flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-muted/50 transition-colors">
+                  <div
+                    className={"absolute inset-y-0 left-0 rounded-md opacity-25 " + barCls}
+                    style={{ width: `${pct}%` }}
+                    aria-hidden
+                  />
+                  <span className="relative w-5 shrink-0 text-[10px] font-mono text-muted-foreground tabular">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="relative min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-medium">{r.primary}</span>
+                      {r.badge && (
+                        <span
+                          className={"shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium tabular " + badgeCls}
+                        >
+                          {r.badge}
+                        </span>
+                      )}
+                    </div>
+                    {r.secondary && (
+                      <p className="truncate text-[11px] text-muted-foreground">{r.secondary}</p>
+                    )}
+                  </div>
+                  <span className="relative text-sm font-semibold tabular shrink-0">
+                    {r.value}
+                    <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">un</span>
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
