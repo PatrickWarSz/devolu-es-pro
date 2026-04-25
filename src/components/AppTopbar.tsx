@@ -106,6 +106,9 @@ export function AppTopbar() {
             <CommandItem onSelect={() => { navigate("/registrar"); setOpen(false); }}>
               Registrar nova devolução
             </CommandItem>
+            <CommandItem onSelect={() => { navigate("/a-caminho"); setOpen(false); }}>
+              Pedidos a caminho {aCaminhoCount > 0 && `(${aCaminhoCount})`}
+            </CommandItem>
             <CommandItem onSelect={() => { navigate("/fila"); setOpen(false); }}>
               Fila do dia
             </CommandItem>
