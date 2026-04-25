@@ -171,8 +171,9 @@ export const seedDevolucoes: Devolucao[] = [
     const plataforma = plats[i % plats.length];
     const statusOpts: Devolucao["status"][] = ["resolved", "resolved", "resolved", "dispute", "loss"];
     const status = statusOpts[i % statusOpts.length];
-    const valor = 60 + ((i * 37) % 280);
+    const valorBase = 60 + ((i * 37) % 280);
     const qtd = 1 + (i % 2);
+    const valor = valorBase * qtd; // já é total do item
     // Alguns recebem 2 itens para simular pedidos compostos
     const multi = i % 4 === 0;
     const itens: DevolucaoItem[] = [
@@ -184,10 +185,10 @@ export const seedDevolucoes: Devolucao[] = [
       itens.push(
         item(100 + i * 2 + 1, `mod-00${((i + 1) % 4) + 1}`, `pec-00${((i + 2) % 6) + 1}`,
              ["Preto", "Branco", "Azul", "Cinza"][(i + 1) % 4],
-             ["P", "M", "G", "GG"][(i + 1) % 4], 1, valor * 0.6),
+             ["P", "M", "G", "GG"][(i + 1) % 4], 1, valorBase * 0.6),
       );
     }
-    const total = itens.reduce((s, it) => s + it.valor * it.quantidade, 0);
+    const total = itens.reduce((s, it) => s + it.valor, 0);
     return {
       id: `dev-1${String(i).padStart(2, "0")}`,
       createdAt: daysAgo(dia),
