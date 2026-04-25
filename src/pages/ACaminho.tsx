@@ -492,7 +492,7 @@ function ItemRow({
             className="tabular"
           />
         </Field>
-        <Field label="Valor unit." compact>
+        <Field label="Valor total" compact>
           <Input
             type="number"
             min={0}
