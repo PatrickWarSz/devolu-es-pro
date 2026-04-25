@@ -264,7 +264,7 @@ export default function Disputas() {
                           key={it.id}
                           className="rounded-md border border-border bg-surface-muted px-2 py-0.5 text-[11px] text-muted-foreground"
                         >
-                          {lookup(modelos, it.modeloId)} · {it.cor || "—"} · {it.quantidade}un · {fmtBRL(it.valor * it.quantidade)}
+                          {lookup(modelos, it.modeloId)} · {it.cor || "—"} · {it.quantidade}un · {fmtBRL(it.valor)}
                         </span>
                       ))}
                     </div>
