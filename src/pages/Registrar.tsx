@@ -157,7 +157,7 @@ export default function Registrar() {
     form.itens.length > 0;
 
   const totalCalc = useMemo(
-    () => form.itens.reduce((s, it) => s + Number(it.valor || 0) * Number(it.quantidade || 0), 0),
+    () => form.itens.reduce((s, it) => s + Number(it.valor || 0), 0),
     [form.itens],
   );
 
