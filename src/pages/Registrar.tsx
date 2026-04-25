@@ -130,14 +130,22 @@ export default function Registrar() {
       itens: f.itens.length === 1 ? f.itens : f.itens.filter((it) => it.id !== id),
     }));
 
+  // Pedido obrigatório apenas em disputa/perda (precisa rastrear)
+  const pedidoObrigatorio = form.status === "dispute" || form.status === "loss";
+
+  // Detecta se o motivo selecionado é "defeito" (case-insensitive, match parcial)
+  const motivoSelecionado = motivos.find((m) => m.id === form.motivoId);
+  const isDefeito = !!motivoSelecionado?.nome.toLowerCase().includes("defeito");
+
   const itensValidos = form.itens.filter(
-    (it) => it.modeloId && it.pecaId && Number(it.quantidade) > 0 && Number(it.valor) >= 0,
+    (it) => it.modeloId && Number(it.quantidade) > 0 && Number(it.valor) >= 0,
   );
 
   const valid =
     form.empresaId &&
     form.plataformaId &&
     form.motivoId &&
+    (!pedidoObrigatorio || form.pedidoId.trim().length > 0) &&
     itensValidos.length === form.itens.length &&
     form.itens.length > 0;
 
@@ -151,7 +159,9 @@ export default function Registrar() {
     if (!valid) {
       toast({
         title: "Preencha os campos obrigatórios",
-        description: "Empresa, plataforma, motivo e ao menos 1 item completo (modelo, peça, qtd e valor).",
+        description: pedidoObrigatorio
+          ? "Empresa, plataforma, motivo, ID do pedido (obrigatório em disputa/perda) e ao menos 1 item com modelo, qtd e valor."
+          : "Empresa, plataforma, motivo e ao menos 1 item com modelo, qtd e valor.",
         variant: "destructive",
       });
       return;
@@ -282,7 +292,11 @@ export default function Registrar() {
               />
             </Field>
 
-            <Field label="ID do Pedido">
+            <Field
+              label="ID do Pedido"
+              required={pedidoObrigatorio}
+              hint={pedidoObrigatorio ? "Necessário para rastrear disputa/perda" : "Opcional"}
+            >
               <Input
                 placeholder="Ex: SHP-991023"
                 value={form.pedidoId}
@@ -291,7 +305,7 @@ export default function Registrar() {
               />
             </Field>
 
-            <Field label="ID da Devolução">
+            <Field label="ID da Devolução" hint="Opcional">
               <Input
                 placeholder="Ex: DEV-00823"
                 value={form.devolucaoId}
@@ -299,6 +313,36 @@ export default function Registrar() {
                 className="font-mono text-sm"
               />
             </Field>
+          </div>
+
+          {/* Status — definido antes dos itens para destravar regras (ID obrigatório, etc.) */}
+          <div className="border-t border-border bg-surface-muted/20 px-5 py-4">
+            <Label className="text-xs font-medium text-muted-foreground">
+              Status da devolução
+            </Label>
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {statusOptions.map((opt) => {
+                const active = form.status === opt.value;
+                const Icon = opt.Icon;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    data-active={active}
+                    data-skip-focus
+                    onClick={() => set("status", opt.value)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-foreground transition-all hover:bg-muted",
+                      opt.cls,
+                      active && "shadow-xs",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="font-medium">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Itens */}
@@ -330,6 +374,7 @@ export default function Registrar() {
                 pecas={pecas}
                 cores={cores}
                 tamanhos={tamanhos}
+                showPeca={isDefeito}
                 onChange={(patch) => updateItem(it.id, patch)}
                 onRemove={() => removeItem(it.id)}
                 canRemove={form.itens.length > 1}
@@ -337,34 +382,6 @@ export default function Registrar() {
             ))}
           </div>
 
-          {/* Status */}
-          <div className="border-t border-border p-5">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Status da devolução
-            </Label>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {statusOptions.map((opt) => {
-                const active = form.status === opt.value;
-                const Icon = opt.Icon;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    data-active={active}
-                    onClick={() => set("status", opt.value)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-foreground transition-all hover:bg-muted",
-                      opt.cls,
-                      active && "shadow-xs",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="font-medium">{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface-muted/40 px-5 py-3">
             <p className="text-xs text-muted-foreground">
@@ -483,6 +500,7 @@ function ItemRow({
   pecas,
   cores,
   tamanhos,
+  showPeca,
   onChange,
   onRemove,
   canRemove,
@@ -493,6 +511,7 @@ function ItemRow({
   pecas: { id: string; nome: string }[];
   cores: { id: string; nome: string }[];
   tamanhos: { id: string; nome: string }[];
+  showPeca: boolean;
   onChange: (patch: Partial<ItemForm>) => void;
   onRemove: () => void;
   canRemove: boolean;
@@ -521,7 +540,7 @@ function ItemRow({
         </div>
       </div>
       <div className="grid gap-x-3 gap-y-3 md:grid-cols-6">
-        <div className="md:col-span-2">
+        <div className={showPeca ? "md:col-span-3" : "md:col-span-4"}>
           <Field label="Modelo" required compact>
             <QuickSelect
               value={item.modeloId}
@@ -531,16 +550,18 @@ function ItemRow({
             />
           </Field>
         </div>
-        <div className="md:col-span-2">
-          <Field label="Peça" required compact>
-            <QuickSelect
-              value={item.pecaId}
-              onValueChange={(v) => onChange({ pecaId: v })}
-              placeholder="Peça"
-              options={pecas.map((p) => ({ value: p.id, label: p.nome }))}
-            />
-          </Field>
-        </div>
+        {showPeca && (
+          <div className="md:col-span-3">
+            <Field label="Peça com defeito" compact hint="motivo = defeito">
+              <QuickSelect
+                value={item.pecaId}
+                onValueChange={(v) => onChange({ pecaId: v })}
+                placeholder="Selecione a peça"
+                options={pecas.map((p) => ({ value: p.id, label: p.nome }))}
+              />
+            </Field>
+          </div>
+        )}
         <Field label="Cor" compact>
           <QuickSelect
             value={item.cor}

@@ -44,6 +44,9 @@ export function QuickSelect({
 }: QuickSelectProps) {
   const [open, setOpen] = useState(false);
   const innerRef = useRef<HTMLButtonElement>(null);
+  // Bloqueia reabertura imediata quando o foco volta ao trigger logo após uma seleção
+  const justInteractedRef = useRef(false);
+
   const setRef = useCallback(
     (node: HTMLButtonElement | null) => {
       innerRef.current = node;
@@ -52,6 +55,13 @@ export function QuickSelect({
     },
     [triggerRef],
   );
+
+  const markInteracted = () => {
+    justInteractedRef.current = true;
+    setTimeout(() => {
+      justInteractedRef.current = false;
+    }, 250);
+  };
 
   const focusNext = () => {
     const trigger = innerRef.current;
@@ -66,11 +76,9 @@ export function QuickSelect({
     const idx = focusables.indexOf(trigger);
     const next = focusables[idx + 1];
     if (next) {
-      // Marcar que o próximo foco veio de "advance" para evitar reabrir imediatamente
       next.setAttribute("data-advanced-focus", "1");
       next.focus();
-      // Limpa o marcador no próximo tick
-      setTimeout(() => next.removeAttribute("data-advanced-focus"), 50);
+      setTimeout(() => next.removeAttribute("data-advanced-focus"), 100);
     }
   };
 
@@ -78,22 +86,38 @@ export function QuickSelect({
     <Select
       value={value}
       onValueChange={(v) => {
+        markInteracted();
         onValueChange(v);
         if (advanceOnSelect) {
-          // Aguarda o Radix fechar o popover antes de avançar
-          setTimeout(focusNext, 30);
+          // Aguarda o Radix fechar o popover e devolver foco antes de avançar
+          setTimeout(focusNext, 60);
         }
       }}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        // Se acabamos de selecionar, ignora pedidos de "abrir" vindos do Radix devolvendo o foco
+        if (next && justInteractedRef.current) return;
+        setOpen(next);
+      }}
       disabled={disabled}
     >
       <SelectTrigger
         ref={setRef}
         onFocus={(e) => {
           if (!openOnFocus) return;
+          if (justInteractedRef.current) return;
           if (e.currentTarget.hasAttribute("data-advanced-focus")) return;
           setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          // Tab nunca deve abrir/selecionar — deixa o navegador mover o foco
+          if (e.key === "Tab") {
+            markInteracted();
+          }
+          // Escape fecha sem mexer
+          if (e.key === "Escape" && open) {
+            markInteracted();
+          }
         }}
       >
         <SelectValue placeholder={placeholder} />
