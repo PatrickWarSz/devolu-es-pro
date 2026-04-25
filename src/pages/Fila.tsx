@@ -99,8 +99,7 @@ export default function Fila() {
         Tamanho: it.tamanho,
         Motivo: lookup(motivos, d.motivoId),
         Quantidade: it.quantidade,
-        ValorUnitario: it.valor,
-        Subtotal: it.valor * it.quantidade,
+        ValorTotalItem: it.valor,
         Status: statusLabel[d.status],
       })),
     );
