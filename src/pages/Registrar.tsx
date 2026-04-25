@@ -500,6 +500,7 @@ function ItemRow({
   pecas,
   cores,
   tamanhos,
+  showPeca,
   onChange,
   onRemove,
   canRemove,
@@ -510,6 +511,7 @@ function ItemRow({
   pecas: { id: string; nome: string }[];
   cores: { id: string; nome: string }[];
   tamanhos: { id: string; nome: string }[];
+  showPeca: boolean;
   onChange: (patch: Partial<ItemForm>) => void;
   onRemove: () => void;
   canRemove: boolean;
@@ -538,7 +540,7 @@ function ItemRow({
         </div>
       </div>
       <div className="grid gap-x-3 gap-y-3 md:grid-cols-6">
-        <div className="md:col-span-2">
+        <div className={showPeca ? "md:col-span-3" : "md:col-span-4"}>
           <Field label="Modelo" required compact>
             <QuickSelect
               value={item.modeloId}
@@ -548,16 +550,18 @@ function ItemRow({
             />
           </Field>
         </div>
-        <div className="md:col-span-2">
-          <Field label="Peça" required compact>
-            <QuickSelect
-              value={item.pecaId}
-              onValueChange={(v) => onChange({ pecaId: v })}
-              placeholder="Peça"
-              options={pecas.map((p) => ({ value: p.id, label: p.nome }))}
-            />
-          </Field>
-        </div>
+        {showPeca && (
+          <div className="md:col-span-3">
+            <Field label="Peça com defeito" compact hint="motivo = defeito">
+              <QuickSelect
+                value={item.pecaId}
+                onValueChange={(v) => onChange({ pecaId: v })}
+                placeholder="Selecione a peça"
+                options={pecas.map((p) => ({ value: p.id, label: p.nome }))}
+              />
+            </Field>
+          </div>
+        )}
         <Field label="Cor" compact>
           <QuickSelect
             value={item.cor}
