@@ -374,6 +374,7 @@ export default function Registrar() {
                 pecas={pecas}
                 cores={cores}
                 tamanhos={tamanhos}
+                showPeca={isDefeito}
                 onChange={(patch) => updateItem(it.id, patch)}
                 onRemove={() => removeItem(it.id)}
                 canRemove={form.itens.length > 1}
