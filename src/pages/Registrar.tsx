@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { QuickSelect } from "@/components/QuickSelect";
 import { useStore, lookup } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import type { ReturnStatus, DevolucaoItem } from "@/lib/types";
+import type { ReturnStatus, DevolucaoItem, PedidoACaminho } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, AlertCircle, XCircle, Trash2, Sparkles, Plus, Package } from "lucide-react";
+import { CheckCircle2, AlertCircle, XCircle, Trash2, Sparkles, Plus, Package, Truck, X } from "lucide-react";
 import { fmtBRL, fmtDateTime, isToday, statusLabel, valorTotal, quantidadeTotal } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
@@ -89,8 +90,14 @@ export default function Registrar() {
   const devolucoes = useStore((s) => s.devolucoes);
   const addDevolucao = useStore((s) => s.addDevolucao);
   const deleteDevolucao = useStore((s) => s.deleteDevolucao);
+  const pedidosACaminho = useStore((s) => s.pedidosACaminho);
+  const deletePedidoACaminho = useStore((s) => s.deletePedidoACaminho);
 
   const firstFieldRef = useRef<HTMLButtonElement>(null);
+  const pedidoBuscaRef = useRef<HTMLInputElement>(null);
+  const [pedidoBusca, setPedidoBusca] = useState("");
+  const [pedidoOriginalId, setPedidoOriginalId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const plataformasDisponiveis = useMemo(() => {
     if (!form.empresaId) return [];
