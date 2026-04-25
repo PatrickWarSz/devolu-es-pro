@@ -381,34 +381,6 @@ export default function Registrar() {
             ))}
           </div>
 
-          {/* Status */}
-          <div className="border-t border-border p-5">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Status da devolução
-            </Label>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {statusOptions.map((opt) => {
-                const active = form.status === opt.value;
-                const Icon = opt.Icon;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    data-active={active}
-                    onClick={() => set("status", opt.value)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-foreground transition-all hover:bg-muted",
-                      opt.cls,
-                      active && "shadow-xs",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="font-medium">{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface-muted/40 px-5 py-3">
             <p className="text-xs text-muted-foreground">
