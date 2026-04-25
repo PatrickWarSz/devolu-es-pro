@@ -369,7 +369,7 @@ export default function Registrar() {
                               </div>
                             </div>
                             <span className="text-xs text-muted-foreground tabular shrink-0">
-                              {fmtBRL(p.itens.reduce((s, it) => s + it.valor * it.quantidade, 0))}
+                              {fmtBRL(p.itens.reduce((s, it) => s + it.valor, 0))}
                             </span>
                           </button>
                         );
