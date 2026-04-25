@@ -201,16 +201,32 @@ export default function Registrar() {
     setPedidoOriginalId(null);
   };
 
-  // Aplica ?pedido=XXX vindo do link "Receber" da página A Caminho
+  // Aplica ?pedido=XXX vindo do link "Receber" da página A Caminho.
+  // Roda quando a lista de pedidos a caminho estiver disponível (Zustand persist
+  // hidrata de forma async, então `pedidosACaminho` pode iniciar vazio).
+  const pedidoAplicadoRef = useRef(false);
   useEffect(() => {
+    if (pedidoAplicadoRef.current) return;
     const param = searchParams.get("pedido");
     if (!param) return;
+    if (pedidosACaminho.length === 0) return; // aguarda hidratação
     const match = pedidosACaminho.find((p) => p.pedidoId === param);
-    if (match) aplicarPedido(match);
+    if (match) {
+      aplicarPedido(match);
+      pedidoAplicadoRef.current = true;
+    } else {
+      // ID não existe — ainda assim limpa o param para não tentar de novo
+      pedidoAplicadoRef.current = true;
+      toast({
+        title: "Pedido não encontrado",
+        description: `O ID "${param}" não está mais na lista de a caminho.`,
+        variant: "destructive",
+      });
+    }
     searchParams.delete("pedido");
     setSearchParams(searchParams, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pedidosACaminho]);
 
   const submit = (e?: React.FormEvent, andNext = false) => {
     e?.preventDefault();
