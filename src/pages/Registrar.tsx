@@ -157,7 +157,7 @@ export default function Registrar() {
     form.itens.length > 0;
 
   const totalCalc = useMemo(
-    () => form.itens.reduce((s, it) => s + Number(it.valor || 0) * Number(it.quantidade || 0), 0),
+    () => form.itens.reduce((s, it) => s + Number(it.valor || 0), 0),
     [form.itens],
   );
 
@@ -201,16 +201,32 @@ export default function Registrar() {
     setPedidoOriginalId(null);
   };
 
-  // Aplica ?pedido=XXX vindo do link "Receber" da página A Caminho
+  // Aplica ?pedido=XXX vindo do link "Receber" da página A Caminho.
+  // Roda quando a lista de pedidos a caminho estiver disponível (Zustand persist
+  // hidrata de forma async, então `pedidosACaminho` pode iniciar vazio).
+  const pedidoAplicadoRef = useRef(false);
   useEffect(() => {
+    if (pedidoAplicadoRef.current) return;
     const param = searchParams.get("pedido");
     if (!param) return;
+    if (pedidosACaminho.length === 0) return; // aguarda hidratação
     const match = pedidosACaminho.find((p) => p.pedidoId === param);
-    if (match) aplicarPedido(match);
+    if (match) {
+      aplicarPedido(match);
+      pedidoAplicadoRef.current = true;
+    } else {
+      // ID não existe — ainda assim limpa o param para não tentar de novo
+      pedidoAplicadoRef.current = true;
+      toast({
+        title: "Pedido não encontrado",
+        description: `O ID "${param}" não está mais na lista de a caminho.`,
+        variant: "destructive",
+      });
+    }
     searchParams.delete("pedido");
     setSearchParams(searchParams, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pedidosACaminho]);
 
   const submit = (e?: React.FormEvent, andNext = false) => {
     e?.preventDefault();
@@ -223,6 +239,22 @@ export default function Registrar() {
         variant: "destructive",
       });
       return;
+    }
+    // Anti-duplicidade: não permite cadastrar a mesma ID de pedido duas vezes
+    // (case-insensitive, ignora espaços). Vazio é permitido (status sem pedido obrigatório).
+    const pedidoNorm = form.pedidoId.trim().toLowerCase();
+    if (pedidoNorm) {
+      const existente = devolucoes.find(
+        (d) => d.pedidoId.trim().toLowerCase() === pedidoNorm,
+      );
+      if (existente) {
+        toast({
+          title: "Pedido já registrado",
+          description: `Já existe uma devolução para "${form.pedidoId.trim()}" (${statusLabel[existente.status]}). Verifique a Fila antes de duplicar.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
     addDevolucao({
       empresaId: form.empresaId,
@@ -369,7 +401,7 @@ export default function Registrar() {
                               </div>
                             </div>
                             <span className="text-xs text-muted-foreground tabular shrink-0">
-                              {fmtBRL(p.itens.reduce((s, it) => s + it.valor * it.quantidade, 0))}
+                              {fmtBRL(p.itens.reduce((s, it) => s + it.valor, 0))}
                             </span>
                           </button>
                         );
@@ -658,28 +690,22 @@ function ItemRow({
   onRemove: () => void;
   canRemove: boolean;
 }) {
-  const subtotal = Number(item.valor || 0) * Number(item.quantidade || 0);
   return (
     <div className="px-5 py-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           Item {index + 1}
         </span>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground tabular">
-            Subtotal: <span className="font-medium text-foreground">{fmtBRL(subtotal)}</span>
-          </span>
-          {canRemove && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className="text-muted-foreground hover:text-destructive transition-colors"
-              aria-label="Remover item"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            aria-label="Remover item"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       <div className="grid gap-x-3 gap-y-3 md:grid-cols-6">
         <div className={showPeca ? "md:col-span-3" : "md:col-span-4"}>
@@ -730,7 +756,7 @@ function ItemRow({
           />
         </Field>
         <div className="md:col-span-5">
-          <Field label="Valor unitário (R$)" required compact>
+          <Field label="Valor total do item (R$)" required compact hint="o que esse item representa no pedido">
             <Input
               type="number"
               min={0}

@@ -99,8 +99,7 @@ export default function Fila() {
         Tamanho: it.tamanho,
         Motivo: lookup(motivos, d.motivoId),
         Quantidade: it.quantidade,
-        ValorUnitario: it.valor,
-        Subtotal: it.valor * it.quantidade,
+        ValorTotalItem: it.valor,
         Status: statusLabel[d.status],
       })),
     );
@@ -284,7 +283,7 @@ export default function Fila() {
                                     </div>
                                     <div className="col-span-2 text-right tabular text-xs">{it.quantidade} un.</div>
                                     <div className="col-span-3 text-right tabular text-sm font-medium">
-                                      {fmtBRL(it.valor * it.quantidade)}
+                                      {fmtBRL(it.valor)}
                                     </div>
                                   </div>
                                 ))}

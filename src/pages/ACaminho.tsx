@@ -112,7 +112,7 @@ export default function ACaminho() {
     itensValidos.length === form.itens.length;
 
   const totalCalc = useMemo(
-    () => form.itens.reduce((s, it) => s + Number(it.valor || 0) * Number(it.quantidade || 0), 0),
+    () => form.itens.reduce((s, it) => s + Number(it.valor || 0), 0),
     [form.itens],
   );
 
@@ -122,6 +122,19 @@ export default function ACaminho() {
       toast({
         title: "Preencha os campos obrigatórios",
         description: "Empresa, plataforma, ID do pedido e ao menos 1 item com modelo.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Anti-duplicidade: não permite cadastrar o mesmo ID em "a caminho" duas vezes
+    const pedidoNorm = form.pedidoId.trim().toLowerCase();
+    const dup = pedidosACaminho.find(
+      (p) => p.pedidoId.trim().toLowerCase() === pedidoNorm,
+    );
+    if (dup) {
+      toast({
+        title: "Pedido já está a caminho",
+        description: `O ID "${form.pedidoId.trim()}" já foi pré-cadastrado. Use o botão "Receber" na lista.`,
         variant: "destructive",
       });
       return;
@@ -479,7 +492,7 @@ function ItemRow({
             className="tabular"
           />
         </Field>
-        <Field label="Valor unit." compact>
+        <Field label="Valor total" compact>
           <Input
             type="number"
             min={0}

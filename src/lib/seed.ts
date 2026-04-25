@@ -91,6 +91,7 @@ const competencia = (n: number) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
+/** Cria um item de devolução. `valor` é o TOTAL do item (já considerando a quantidade). */
 const item = (
   n: number,
   modeloId: string,
@@ -98,7 +99,7 @@ const item = (
   cor: string,
   tamanho: string,
   quantidade: number,
-  valor: number,
+  valorTotal: number,
 ): DevolucaoItem => ({
   id: id("itm", n),
   modeloId,
@@ -106,7 +107,7 @@ const item = (
   cor,
   tamanho,
   quantidade,
-  valor,
+  valor: valorTotal,
 });
 
 export const seedDevolucoes: Devolucao[] = [
@@ -145,7 +146,7 @@ export const seedDevolucoes: Devolucao[] = [
     empresaId: "emp-003", plataformaId: "plt-001",
     pedidoId: "SHP-771122", devolucaoId: "DEV-00826",
     motivoId: "mot-001", status: "dispute",
-    itens: [item(6, "mod-001", "pec-005", "Cinza", "GG", 2, 67.5)],
+    itens: [item(6, "mod-001", "pec-005", "Cinza", "GG", 2, 135.0)],
   },
   // Ontem
   {
@@ -170,8 +171,9 @@ export const seedDevolucoes: Devolucao[] = [
     const plataforma = plats[i % plats.length];
     const statusOpts: Devolucao["status"][] = ["resolved", "resolved", "resolved", "dispute", "loss"];
     const status = statusOpts[i % statusOpts.length];
-    const valor = 60 + ((i * 37) % 280);
+    const valorBase = 60 + ((i * 37) % 280);
     const qtd = 1 + (i % 2);
+    const valor = valorBase * qtd; // já é total do item
     // Alguns recebem 2 itens para simular pedidos compostos
     const multi = i % 4 === 0;
     const itens: DevolucaoItem[] = [
@@ -183,10 +185,10 @@ export const seedDevolucoes: Devolucao[] = [
       itens.push(
         item(100 + i * 2 + 1, `mod-00${((i + 1) % 4) + 1}`, `pec-00${((i + 2) % 6) + 1}`,
              ["Preto", "Branco", "Azul", "Cinza"][(i + 1) % 4],
-             ["P", "M", "G", "GG"][(i + 1) % 4], 1, valor * 0.6),
+             ["P", "M", "G", "GG"][(i + 1) % 4], 1, valorBase * 0.6),
       );
     }
-    const total = itens.reduce((s, it) => s + it.valor * it.quantidade, 0);
+    const total = itens.reduce((s, it) => s + it.valor, 0);
     return {
       id: `dev-1${String(i).padStart(2, "0")}`,
       createdAt: daysAgo(dia),
