@@ -658,28 +658,22 @@ function ItemRow({
   onRemove: () => void;
   canRemove: boolean;
 }) {
-  const subtotal = Number(item.valor || 0) * Number(item.quantidade || 0);
   return (
     <div className="px-5 py-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           Item {index + 1}
         </span>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground tabular">
-            Subtotal: <span className="font-medium text-foreground">{fmtBRL(subtotal)}</span>
-          </span>
-          {canRemove && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className="text-muted-foreground hover:text-destructive transition-colors"
-              aria-label="Remover item"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            aria-label="Remover item"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       <div className="grid gap-x-3 gap-y-3 md:grid-cols-6">
         <div className={showPeca ? "md:col-span-3" : "md:col-span-4"}>
