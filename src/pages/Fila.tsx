@@ -283,7 +283,7 @@ export default function Fila() {
                                     </div>
                                     <div className="col-span-2 text-right tabular text-xs">{it.quantidade} un.</div>
                                     <div className="col-span-3 text-right tabular text-sm font-medium">
-                                      {fmtBRL(it.valor * it.quantidade)}
+                                      {fmtBRL(it.valor)}
                                     </div>
                                   </div>
                                 ))}
