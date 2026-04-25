@@ -11,6 +11,7 @@ import Fila from "./pages/Fila.tsx";
 import Disputas from "./pages/Disputas.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Configuracoes from "./pages/Configuracoes.tsx";
+import ACaminho from "./pages/ACaminho.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/registrar" element={<Registrar />} />
+            <Route path="/a-caminho" element={<ACaminho />} />
             <Route path="/fila" element={<Fila />} />
             <Route path="/disputas" element={<Disputas />} />
             <Route path="/dashboard" element={<Dashboard />} />

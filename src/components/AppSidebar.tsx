@@ -6,6 +6,7 @@ import {
   BarChart3,
   Settings,
   Box,
+  Truck,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ import { useMemo } from "react";
 
 const items = [
   { to: "/registrar", label: "Registrar", icon: PlusCircle, kbd: "R" },
+  { to: "/a-caminho", label: "A Caminho", icon: Truck, kbd: "A" },
   { to: "/fila", label: "Fila do Dia", icon: ListChecks, kbd: "F" },
   { to: "/disputas", label: "Disputas", icon: ShieldAlert, kbd: "D" },
   { to: "/dashboard", label: "Dashboard", icon: BarChart3, kbd: "B" },
@@ -21,10 +23,12 @@ const items = [
 export function AppSidebar() {
   const location = useLocation();
   const devolucoes = useStore((s) => s.devolucoes);
+  const pedidosACaminho = useStore((s) => s.pedidosACaminho);
   const disputaCount = useMemo(
     () => devolucoes.filter((d) => d.status === "dispute").length,
     [devolucoes],
   );
+  const aCaminhoCount = pedidosACaminho.length;
 
   return (
     <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
@@ -52,7 +56,8 @@ export function AppSidebar() {
           {items.map((item) => {
             const active = location.pathname === item.to;
             const Icon = item.icon;
-            const showBadge = item.to === "/disputas" && disputaCount > 0;
+            const showDisputaBadge = item.to === "/disputas" && disputaCount > 0;
+            const showCaminhoBadge = item.to === "/a-caminho" && aCaminhoCount > 0;
             return (
               <li key={item.to}>
                 <NavLink
@@ -71,9 +76,14 @@ export function AppSidebar() {
                     )}
                   />
                   <span className="flex-1 truncate">{item.label}</span>
-                  {showBadge && (
+                  {showDisputaBadge && (
                     <span className="rounded-full bg-warning-soft px-1.5 py-0.5 text-[10px] font-medium text-warning-soft-foreground tabular">
                       {disputaCount}
+                    </span>
+                  )}
+                  {showCaminhoBadge && (
+                    <span className="rounded-full bg-primary-soft px-1.5 py-0.5 text-[10px] font-medium text-primary tabular">
+                      {aCaminhoCount}
                     </span>
                   )}
                   <span className="kbd opacity-0 group-hover:opacity-100 transition-opacity">
