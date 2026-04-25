@@ -130,14 +130,22 @@ export default function Registrar() {
       itens: f.itens.length === 1 ? f.itens : f.itens.filter((it) => it.id !== id),
     }));
 
+  // Pedido obrigatório apenas em disputa/perda (precisa rastrear)
+  const pedidoObrigatorio = form.status === "dispute" || form.status === "loss";
+
+  // Detecta se o motivo selecionado é "defeito" (case-insensitive, match parcial)
+  const motivoSelecionado = motivos.find((m) => m.id === form.motivoId);
+  const isDefeito = !!motivoSelecionado?.nome.toLowerCase().includes("defeito");
+
   const itensValidos = form.itens.filter(
-    (it) => it.modeloId && it.pecaId && Number(it.quantidade) > 0 && Number(it.valor) >= 0,
+    (it) => it.modeloId && Number(it.quantidade) > 0 && Number(it.valor) >= 0,
   );
 
   const valid =
     form.empresaId &&
     form.plataformaId &&
     form.motivoId &&
+    (!pedidoObrigatorio || form.pedidoId.trim().length > 0) &&
     itensValidos.length === form.itens.length &&
     form.itens.length > 0;
 
