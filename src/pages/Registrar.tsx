@@ -724,7 +724,7 @@ function ItemRow({
           />
         </Field>
         <div className="md:col-span-5">
-          <Field label="Valor unitário (R$)" required compact>
+          <Field label="Valor total do item (R$)" required compact hint="o que esse item representa no pedido">
             <Input
               type="number"
               min={0}
