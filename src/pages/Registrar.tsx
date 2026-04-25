@@ -161,6 +161,57 @@ export default function Registrar() {
     [form.itens],
   );
 
+  // ============= Pedidos a caminho =============
+
+  const sugestoes = useMemo(() => {
+    const q = pedidoBusca.trim().toLowerCase();
+    if (!q) return [];
+    return pedidosACaminho
+      .filter((p) => p.pedidoId.toLowerCase().includes(q))
+      .slice(0, 5);
+  }, [pedidoBusca, pedidosACaminho]);
+
+  const aplicarPedido = (p: PedidoACaminho) => {
+    setForm((f) => ({
+      ...f,
+      empresaId: p.empresaId,
+      plataformaId: p.plataformaId,
+      pedidoId: p.pedidoId,
+      devolucaoId: p.devolucaoId ?? "",
+      motivoId: p.motivoId ?? f.motivoId,
+      itens: p.itens.map((it) => ({
+        id: localUid(),
+        modeloId: it.modeloId,
+        pecaId: it.pecaId,
+        cor: it.cor,
+        tamanho: it.tamanho,
+        quantidade: it.quantidade,
+        valor: it.valor,
+      })),
+    }));
+    setPedidoOriginalId(p.id);
+    setPedidoBusca("");
+    toast({
+      title: "Pedido carregado",
+      description: `${p.pedidoId} · ${p.itens.length} item(ns) preenchido(s).`,
+    });
+  };
+
+  const limparVinculo = () => {
+    setPedidoOriginalId(null);
+  };
+
+  // Aplica ?pedido=XXX vindo do link "Receber" da página A Caminho
+  useEffect(() => {
+    const param = searchParams.get("pedido");
+    if (!param) return;
+    const match = pedidosACaminho.find((p) => p.pedidoId === param);
+    if (match) aplicarPedido(match);
+    searchParams.delete("pedido");
+    setSearchParams(searchParams, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = (e?: React.FormEvent, andNext = false) => {
     e?.preventDefault();
     if (!valid) {
@@ -192,6 +243,11 @@ export default function Registrar() {
         valor: Number(it.valor),
       })),
     });
+    // Se a devolução foi criada a partir de um pedido a caminho, remove-o da lista
+    if (pedidoOriginalId) {
+      deletePedidoACaminho(pedidoOriginalId);
+      setPedidoOriginalId(null);
+    }
     toast({
       title: "Devolução registrada",
       description: `${form.itens.length} ite${form.itens.length === 1 ? "m" : "ns"} · ${fmtBRL(totalCalc)} · ${statusLabel[form.status]}`,
