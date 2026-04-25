@@ -146,7 +146,7 @@ export const seedDevolucoes: Devolucao[] = [
     empresaId: "emp-003", plataformaId: "plt-001",
     pedidoId: "SHP-771122", devolucaoId: "DEV-00826",
     motivoId: "mot-001", status: "dispute",
-    itens: [item(6, "mod-001", "pec-005", "Cinza", "GG", 2, 67.5)],
+    itens: [item(6, "mod-001", "pec-005", "Cinza", "GG", 2, 135.0)],
   },
   // Ontem
   {
