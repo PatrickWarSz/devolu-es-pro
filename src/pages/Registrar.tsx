@@ -302,6 +302,85 @@ export default function Registrar() {
             </p>
           </div>
 
+          {/* Busca por pedido a caminho — autocomplete no topo */}
+          <div className="border-b border-border bg-primary-soft/30 px-5 py-3">
+            {pedidoOriginalId ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Truck className="h-4 w-4 text-primary shrink-0" />
+                  <span className="text-foreground">
+                    Vinculado ao pedido a caminho{" "}
+                    <span className="font-mono font-semibold">{form.pedidoId}</span>
+                    <span className="text-muted-foreground"> — será removido da lista ao registrar.</span>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={limparVinculo}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Desvincular"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <Truck className="h-3.5 w-3.5" />
+                  Pedido a caminho? Cole o ID para puxar os dados
+                  {pedidosACaminho.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      · {pedidosACaminho.length} aguardando
+                    </span>
+                  )}
+                </Label>
+                <div className="relative">
+                  <Input
+                    ref={pedidoBuscaRef}
+                    value={pedidoBusca}
+                    onChange={(e) => setPedidoBusca(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && sugestoes.length > 0) {
+                        e.preventDefault();
+                        aplicarPedido(sugestoes[0]);
+                      }
+                    }}
+                    placeholder="Ex: SHP-991023 (digite ao menos 1 caractere)"
+                    className="font-mono text-sm"
+                    data-skip-focus
+                  />
+                  {sugestoes.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-md border border-border bg-popover shadow-md max-h-64 overflow-auto">
+                      {sugestoes.map((p) => {
+                        const principal = p.itens[0];
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => aplicarPedido(p)}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between gap-3 border-b border-border last:border-0"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-mono text-sm font-medium">{p.pedidoId}</div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {lookup(empresas, p.empresaId)} · {lookup(plataformas, p.plataformaId)} ·{" "}
+                                {principal ? lookup(modelos, principal.modeloId) : "—"}
+                                {p.itens.length > 1 && ` +${p.itens.length - 1}`}
+                              </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground tabular shrink-0">
+                              {fmtBRL(p.itens.reduce((s, it) => s + it.valor * it.quantidade, 0))}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Cabeçalho da devolução */}
           <div className="grid gap-x-4 gap-y-4 p-5 md:grid-cols-2">
             <Field label="Empresa" required>
