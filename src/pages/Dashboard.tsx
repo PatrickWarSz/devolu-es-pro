@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, TrendingDown, Activity, Percent } from "lucide-react";
+import { Download, TrendingDown, Activity, Percent, Package, Ruler, Palette, Wrench } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -164,6 +164,99 @@ export default function Dashboard() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   }, [filtradas, motivos]);
+
+  // ============== Análise de Produto ==============
+  // Cruzamentos para entender PORQUÊ um produto está sendo devolvido:
+  // - tamanho (ex: "G está pequeno"), cor (ex: "branco transparente"),
+  // - peça com defeito (quando motivo = defeito).
+
+  /** Top modelos devolvidos com breakdown do motivo principal. */
+  const topModelos = useMemo(() => {
+    type Acc = { qtd: number; motivos: Map<string, number> };
+    const map = new Map<string, Acc>();
+    filtradas.forEach((d) => {
+      const motivoNome = lookup(motivos, d.motivoId);
+      d.itens.forEach((it) => {
+        const k = lookup(modelos, it.modeloId);
+        const cur = map.get(k) ?? { qtd: 0, motivos: new Map() };
+        cur.qtd += it.quantidade;
+        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
+        map.set(k, cur);
+      });
+    });
+    return Array.from(map.entries())
+      .map(([modelo, acc]) => {
+        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
+        return {
+          modelo,
+          qtd: acc.qtd,
+          motivoTop: motivoTop ? motivoTop[0] : "—",
+          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
+        };
+      })
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos, motivos]);
+
+  /** Combinação modelo + tamanho — revela problemas de modelagem (ex: "G pequeno"). */
+  const topModeloTamanho = useMemo(() => {
+    const map = new Map<string, { modelo: string; tamanho: string; qtd: number }>();
+    filtradas.forEach((d) => {
+      d.itens.forEach((it) => {
+        const tam = it.tamanho || "—";
+        const mod = lookup(modelos, it.modeloId);
+        const k = `${mod}__${tam}`;
+        const cur = map.get(k) ?? { modelo: mod, tamanho: tam, qtd: 0 };
+        cur.qtd += it.quantidade;
+        map.set(k, cur);
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos]);
+
+  /** Combinação modelo + cor — revela problemas específicos de cor (ex: branco transparente). */
+  const topModeloCor = useMemo(() => {
+    const map = new Map<string, { modelo: string; cor: string; qtd: number }>();
+    filtradas.forEach((d) => {
+      d.itens.forEach((it) => {
+        const cor = it.cor || "—";
+        const mod = lookup(modelos, it.modeloId);
+        const k = `${mod}__${cor}`;
+        const cur = map.get(k) ?? { modelo: mod, cor, qtd: 0 };
+        cur.qtd += it.quantidade;
+        map.set(k, cur);
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos]);
+
+  /** Peças que voltam com defeito — só considera devoluções cujo motivo contém "defeito". */
+  const topPecasDefeito = useMemo(() => {
+    const motivosDefeito = new Set(
+      motivos.filter((m) => m.nome.toLowerCase().includes("defeito")).map((m) => m.id),
+    );
+    const map = new Map<string, { peca: string; modelo: string; qtd: number }>();
+    filtradas
+      .filter((d) => motivosDefeito.has(d.motivoId))
+      .forEach((d) => {
+        d.itens.forEach((it) => {
+          if (!it.pecaId) return;
+          const peca = lookup(pecas, it.pecaId);
+          const mod = lookup(modelos, it.modeloId);
+          const k = `${mod}__${peca}`;
+          const cur = map.get(k) ?? { peca, modelo: mod, qtd: 0 };
+          cur.qtd += it.quantidade;
+          map.set(k, cur);
+        });
+      });
+    return Array.from(map.values())
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 8);
+  }, [filtradas, modelos, motivos, pecas]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE));
   const ordenadas = useMemo(
@@ -380,6 +473,78 @@ export default function Dashboard() {
         </ChartCard>
       </div>
 
+      {/* ============== Análise de Produto ============== */}
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">Análise de produto</h2>
+            <p className="text-xs text-muted-foreground">
+              Cruzamentos para entender por que cada produto está voltando — modelagem, cor, peça defeituosa.
+            </p>
+          </div>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Top 8 de cada
+          </span>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RankingCard
+            title="Modelos mais devolvidos"
+            subtitle="Com o motivo predominante de cada um"
+            icon={<Package className="h-3.5 w-3.5" />}
+            empty="Sem devoluções no recorte atual."
+            rows={topModelos.map((r) => ({
+              key: r.modelo,
+              primary: r.modelo,
+              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
+              value: r.qtd,
+            }))}
+          />
+
+          <RankingCard
+            title="Modelo + Tamanho"
+            subtitle="Indicador de problemas de modelagem"
+            icon={<Ruler className="h-3.5 w-3.5" />}
+            empty="Nenhum item com tamanho informado."
+            accent="warning"
+            rows={topModeloTamanho.map((r) => ({
+              key: `${r.modelo}-${r.tamanho}`,
+              primary: r.modelo,
+              badge: r.tamanho,
+              value: r.qtd,
+            }))}
+          />
+
+          <RankingCard
+            title="Modelo + Cor"
+            subtitle="Para detectar problemas específicos por cor (ex: transparência)"
+            icon={<Palette className="h-3.5 w-3.5" />}
+            empty="Nenhum item com cor informada."
+            accent="info"
+            rows={topModeloCor.map((r) => ({
+              key: `${r.modelo}-${r.cor}`,
+              primary: r.modelo,
+              badge: r.cor,
+              value: r.qtd,
+            }))}
+          />
+
+          <RankingCard
+            title="Peças com defeito"
+            subtitle="Apenas devoluções com motivo de defeito"
+            icon={<Wrench className="h-3.5 w-3.5" />}
+            empty="Nenhuma devolução por defeito com peça informada."
+            accent="destructive"
+            rows={topPecasDefeito.map((r) => ({
+              key: `${r.modelo}-${r.peca}`,
+              primary: r.modelo,
+              secondary: r.peca,
+              value: r.qtd,
+            }))}
+          />
+        </div>
+      </section>
+
       <div className="rounded-lg border border-border bg-card shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div>
@@ -523,6 +688,107 @@ function ChartCard({
         {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
       {children}
+    </div>
+  );
+}
+
+interface RankingRow {
+  key: string;
+  primary: string;
+  secondary?: string;
+  badge?: string;
+  value: number;
+}
+
+function RankingCard({
+  title,
+  subtitle,
+  icon,
+  rows,
+  empty,
+  accent = "primary",
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  rows: RankingRow[];
+  empty: string;
+  accent?: "primary" | "warning" | "info" | "destructive";
+}) {
+  const max = rows.reduce((m, r) => Math.max(m, r.value), 0);
+  const barCls = {
+    primary: "bg-primary/70",
+    warning: "bg-warning/70",
+    info: "bg-info/70",
+    destructive: "bg-destructive/70",
+  }[accent];
+  const iconWrapCls = {
+    primary: "bg-primary-soft text-primary",
+    warning: "bg-warning-soft text-warning-soft-foreground",
+    info: "bg-info-soft text-info-soft-foreground",
+    destructive: "bg-destructive-soft text-destructive-soft-foreground",
+  }[accent];
+  const badgeCls = {
+    primary: "bg-primary-soft text-primary border-primary/20",
+    warning: "bg-warning-soft text-warning-soft-foreground border-warning/30",
+    info: "bg-info-soft text-info-soft-foreground border-info/30",
+    destructive: "bg-destructive-soft text-destructive-soft-foreground border-destructive/30",
+  }[accent];
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 shadow-xs">
+      <div className="mb-3 flex items-start gap-2.5">
+        {icon && (
+          <div className={"flex h-7 w-7 shrink-0 items-center justify-center rounded-md " + iconWrapCls}>
+            {icon}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-medium leading-tight">{title}</h3>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted-foreground">{empty}</p>
+      ) : (
+        <ol className="space-y-1.5">
+          {rows.map((r, i) => {
+            const pct = max > 0 ? (r.value / max) * 100 : 0;
+            return (
+              <li key={r.key} className="group relative">
+                <div className="relative flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-muted/50 transition-colors">
+                  <div
+                    className={"absolute inset-y-0 left-0 rounded-md opacity-25 " + barCls}
+                    style={{ width: `${pct}%` }}
+                    aria-hidden
+                  />
+                  <span className="relative w-5 shrink-0 text-[10px] font-mono text-muted-foreground tabular">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="relative min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-medium">{r.primary}</span>
+                      {r.badge && (
+                        <span
+                          className={"shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium tabular " + badgeCls}
+                        >
+                          {r.badge}
+                        </span>
+                      )}
+                    </div>
+                    {r.secondary && (
+                      <p className="truncate text-[11px] text-muted-foreground">{r.secondary}</p>
+                    )}
+                  </div>
+                  <span className="relative text-sm font-semibold tabular shrink-0">
+                    {r.value}
+                    <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">un</span>
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </div>
   );
 }
