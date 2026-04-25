@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, TrendingDown, Activity, Percent } from "lucide-react";
+import { Download, TrendingDown, Activity, Percent, Package, Ruler, Palette, Wrench } from "lucide-react";
 import {
   Bar,
   BarChart,
