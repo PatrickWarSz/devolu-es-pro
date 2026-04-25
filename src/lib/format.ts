@@ -54,12 +54,14 @@ export const statusLabel: Record<Devolucao["status"], string> = {
 export const quantidadeTotal = (d: Devolucao) =>
   d.itens.reduce((s, it) => s + it.quantidade, 0);
 
-/** Valor bruto total (soma de unitário × qtd de cada item) */
-export const valorTotal = (d: Devolucao) =>
-  d.itens.reduce((s, it) => s + it.valor * it.quantidade, 0);
+/** Valor bruto total (soma do valor total de cada item).
+ *  Cada item já guarda o valor TOTAL (não unitário) — a multiplicação por
+ *  quantidade não é feita aqui para evitar dupla contagem. */
+export const valorTotal = (d: Pick<Devolucao, "itens">) =>
+  d.itens.reduce((s, it) => s + Number(it.valor || 0), 0);
 
-/** Valor de um único item */
-export const valorItem = (it: DevolucaoItem) => it.valor * it.quantidade;
+/** Valor de um único item (já é o total) */
+export const valorItem = (it: DevolucaoItem) => Number(it.valor || 0);
 
 /**
  * Valor "efetivo" usado em relatórios financeiros:
