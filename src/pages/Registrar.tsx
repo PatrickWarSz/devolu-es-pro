@@ -224,6 +224,22 @@ export default function Registrar() {
       });
       return;
     }
+    // Anti-duplicidade: não permite cadastrar a mesma ID de pedido duas vezes
+    // (case-insensitive, ignora espaços). Vazio é permitido (status sem pedido obrigatório).
+    const pedidoNorm = form.pedidoId.trim().toLowerCase();
+    if (pedidoNorm) {
+      const existente = devolucoes.find(
+        (d) => d.pedidoId.trim().toLowerCase() === pedidoNorm,
+      );
+      if (existente) {
+        toast({
+          title: "Pedido já registrado",
+          description: `Já existe uma devolução para "${form.pedidoId.trim()}" (${statusLabel[existente.status]}). Verifique a Fila antes de duplicar.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     addDevolucao({
       empresaId: form.empresaId,
       plataformaId: form.plataformaId,
