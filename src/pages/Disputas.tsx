@@ -267,6 +267,15 @@ export default function Disputas() {
                         <X className="h-3.5 w-3.5 mr-1" />
                         Perdi
                       </Button>
+                      <button
+                        type="button"
+                        onClick={() => setExcluir(d)}
+                        className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive-soft/40 transition-colors"
+                        aria-label="Excluir registro"
+                        title="Excluir registro"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
                   {restante > 0 && (
