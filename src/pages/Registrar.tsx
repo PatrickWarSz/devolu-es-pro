@@ -561,6 +561,24 @@ export default function Registrar() {
                 className="font-mono text-sm"
               />
             </Field>
+
+            <div className="md:col-span-2">
+              <Field
+                label="Valor total da devolução (R$)"
+                required
+                hint="valor único do pedido inteiro — independente de quantos itens"
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0,00"
+                  value={form.valorPedido || ""}
+                  onChange={(e) => set("valorPedido", Number(e.target.value))}
+                  className="tabular text-base font-medium"
+                />
+              </Field>
+            </div>
           </div>
 
           {/* Status — definido antes dos itens para destravar regras (ID obrigatório, etc.) */}
