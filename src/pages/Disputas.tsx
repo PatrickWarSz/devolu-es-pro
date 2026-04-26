@@ -14,11 +14,21 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Calendar, Trophy, X, Package, Clock, AlertTriangle } from "lucide-react";
+import { ShieldAlert, Calendar, Trophy, X, Package, Clock, AlertTriangle, Trash2 } from "lucide-react";
 import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
 import { avaliarPrazo, prazoStatusOrder, type PrazoInfo, type PrazoStatus } from "@/lib/disputaPrazo";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Devolucao } from "@/lib/types";
 
 type ResolucaoKind = "win" | "loss";
@@ -38,6 +48,7 @@ const prazoBadgeCls: Record<PrazoStatus, string> = {
 export default function Disputas() {
   const devolucoes = useStore((s) => s.devolucoes);
   const setStatus = useStore((s) => s.setStatus);
+  const deleteDevolucao = useStore((s) => s.deleteDevolucao);
   const empresas = useStore((s) => s.empresas);
   const plataformas = useStore((s) => s.plataformas);
   const modelos = useStore((s) => s.modelos);
@@ -47,6 +58,7 @@ export default function Disputas() {
 
   const [resolucao, setResolucao] = useState<ResolucaoState | null>(null);
   const [valorFinal, setValorFinal] = useState("");
+  const [excluir, setExcluir] = useState<Devolucao | null>(null);
 
   const disputas = useMemo(
     () =>
