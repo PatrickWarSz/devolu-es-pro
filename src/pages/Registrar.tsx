@@ -847,19 +847,6 @@ function ItemRow({
             className="tabular"
           />
         </Field>
-        <div className="md:col-span-5">
-          <Field label="Valor total do item (R$)" required compact hint="o que esse item representa no pedido">
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="0,00"
-              value={item.valor}
-              onChange={(e) => onChange({ valor: Number(e.target.value) })}
-              className="tabular"
-            />
-          </Field>
-        </div>
       </div>
     </div>
   );
