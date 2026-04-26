@@ -70,11 +70,13 @@ const ALL = "__all__";
 
 export default function Dashboard() {
   const devolucoes = useStore((s) => s.devolucoes);
+  const deleteDevolucao = useStore((s) => s.deleteDevolucao);
   const empresas = useStore((s) => s.empresas);
   const plataformas = useStore((s) => s.plataformas);
   const modelos = useStore((s) => s.modelos);
   const pecas = useStore((s) => s.pecas);
   const motivos = useStore((s) => s.motivos);
+  const { toast } = useToast();
 
   const [fEmpresa, setFEmpresa] = useState(ALL);
   const [fPlataforma, setFPlataforma] = useState(ALL);
@@ -83,6 +85,7 @@ export default function Dashboard() {
   const [fCompetencia, setFCompetencia] = useState(ALL);
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [excluir, setExcluir] = useState<Devolucao | null>(null);
   const PAGE = 12;
 
   const competencias = useMemo(() => {
