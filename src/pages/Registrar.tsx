@@ -281,14 +281,16 @@ export default function Registrar() {
       motivoId: form.motivoId,
       status: form.status,
       valorRecuperado: form.status === "resolved" ? totalCalc : undefined,
-      itens: form.itens.map((it) => ({
+      // Valor total é único da devolução. Para preservar o modelo (valor por item),
+      // colocamos todo o valor no primeiro item e zeramos os demais.
+      itens: form.itens.map((it, idx) => ({
         id: it.id,
         modeloId: it.modeloId,
         pecaId: it.pecaId,
         cor: it.cor,
         tamanho: it.tamanho,
         quantidade: Number(it.quantidade),
-        valor: Number(it.valor),
+        valor: idx === 0 ? totalCalc : 0,
       })),
     });
     // Se a devolução foi criada a partir de um pedido a caminho, remove-o da lista
