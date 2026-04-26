@@ -42,6 +42,7 @@ interface FormState {
   devolucaoId: string;
   motivoId: string;
   notas: string;
+  valorPedido: number; // valor total único da devolução
   itens: ItemForm[];
 }
 
@@ -52,6 +53,7 @@ const empty = (): FormState => ({
   devolucaoId: "",
   motivoId: "",
   notas: "",
+  valorPedido: 0,
   itens: [emptyItem()],
 });
 
@@ -111,10 +113,7 @@ export default function ACaminho() {
     form.pedidoId.trim().length > 0 &&
     itensValidos.length === form.itens.length;
 
-  const totalCalc = useMemo(
-    () => form.itens.reduce((s, it) => s + Number(it.valor || 0), 0),
-    [form.itens],
-  );
+  const totalCalc = Number(form.valorPedido || 0);
 
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -146,14 +145,15 @@ export default function ACaminho() {
       devolucaoId: form.devolucaoId.trim() || undefined,
       motivoId: form.motivoId || undefined,
       notas: form.notas.trim() || undefined,
-      itens: form.itens.map((it) => ({
+      // Valor único: armazenamos no primeiro item para preservar o modelo
+      itens: form.itens.map((it, idx) => ({
         id: it.id,
         modeloId: it.modeloId,
         pecaId: it.pecaId,
         cor: it.cor,
         tamanho: it.tamanho,
         quantidade: Number(it.quantidade),
-        valor: Number(it.valor),
+        valor: idx === 0 ? totalCalc : 0,
       })),
     });
     toast({
