@@ -1,4 +1,4 @@
-import type { Devolucao, DevolucaoItem } from "./types";
+import type { Devolucao, DevolucaoItem, Motivo } from "./types";
 
 export const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", {
@@ -63,16 +63,33 @@ export const valorTotal = (d: Pick<Devolucao, "itens">) =>
 /** Valor de um único item (já é o total) */
 export const valorItem = (it: DevolucaoItem) => Number(it.valor || 0);
 
+/** Retorna true se o motivo gera perda operacional (erro do vendedor).
+ *  Quando o motivo não está na lista (legado/removido), assume true por segurança. */
+export const motivoGeraPerda = (motivos: Motivo[], motivoId: string) => {
+  const m = motivos.find((x) => x.id === motivoId);
+  if (!m) return true;
+  return m.geraPerda !== false;
+};
+
 /**
- * Valor "efetivo" usado em relatórios financeiros:
- * - dispute: R$ 1 simbólico (independente do número de itens)
- * - resolved: valorRecuperado se houver, senão valorTotal
- * - loss: valorTotal (perda confirmada)
+ * Valor "efetivo" usado em relatórios financeiros.
+ *
+ * Regras:
+ * - dispute: R$ 1 simbólico (independente do número de itens).
+ * - resolved + motivo sem perda operacional: R$ 0 (devolução resolvida sem
+ *   custo para o vendedor — não entra em "recuperado" nem em "perda").
+ * - resolved + motivo com perda: valorRecuperado se houver, senão valorTotal.
+ * - loss: valorTotal (perda confirmada).
+ *
+ * Passe a lista de motivos para aplicar a regra "sem perda". Sem ela, mantém
+ * o comportamento legado.
  */
-export const valorEfetivo = (d: Devolucao) => {
+export const valorEfetivo = (d: Devolucao, motivos?: Motivo[]) => {
   if (d.status === "dispute") return 1;
   const total = valorTotal(d);
   if (d.status === "loss") return total;
+  // resolved
+  if (motivos && !motivoGeraPerda(motivos, d.motivoId)) return 0;
   return d.valorRecuperado ?? total;
 };
 

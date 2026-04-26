@@ -26,6 +26,7 @@ import {
   fmtBRL,
   fmtBRLCompact,
   fmtDate,
+  motivoGeraPerda,
   statusLabel,
   valorEfetivo,
   valorTotal,
@@ -117,18 +118,22 @@ export default function Dashboard() {
     // Conta por DEVOLUÇÃO (header), soma por ITEM
     const totalDevolucoes = filtradas.length;
     const totalItens = filtradas.reduce((s, d) => s + quantidadeTotal(d), 0);
-    const valorPerda = filtradas
+    // Apenas devoluções cujo motivo gera perda operacional entram nos
+    // indicadores financeiros (recuperado / perda / em risco).
+    const comPerda = filtradas.filter((d) => motivoGeraPerda(motivos, d.motivoId));
+    const valorPerda = comPerda
       .filter((d) => d.status === "loss")
       .reduce((s, d) => s + valorTotal(d), 0);
-    const valorRecuperado = filtradas
+    const valorRecuperado = comPerda
       .filter((d) => d.status === "resolved")
       .reduce((s, d) => s + (d.valorRecuperado ?? valorTotal(d)), 0);
     const disputasAbertas = filtradas.filter((d) => d.status === "dispute").length;
-    const valorEmDisputa = filtradas
+    const valorEmDisputa = comPerda
       .filter((d) => d.status === "dispute")
       .reduce((s, d) => s + valorTotal(d), 0);
-    const totalAvaliado = filtradas.reduce((s, d) => s + valorTotal(d), 0);
+    const totalAvaliado = comPerda.reduce((s, d) => s + valorTotal(d), 0);
     const taxaRecuperacao = totalAvaliado > 0 ? (valorRecuperado / totalAvaliado) * 100 : 0;
+    const semPerda = filtradas.length - comPerda.length;
     return {
       totalDevolucoes,
       totalItens,
@@ -137,15 +142,16 @@ export default function Dashboard() {
       disputasAbertas,
       valorEmDisputa,
       taxaRecuperacao,
+      semPerda,
     };
-  }, [filtradas]);
+  }, [filtradas, motivos]);
 
   const evolucaoMensal = useMemo(() => {
     const map = new Map<string, { mes: string; resolvidas: number; disputas: number; perdas: number }>();
     filtradas.forEach((d) => {
       const key = d.competencia;
       const cur = map.get(key) ?? { mes: key, resolvidas: 0, disputas: 0, perdas: 0 };
-      const v = valorEfetivo(d);
+      const v = valorEfetivo(d, motivos);
       if (d.status === "resolved") cur.resolvidas += v;
       else if (d.status === "dispute") cur.disputas += v;
       else cur.perdas += v;
@@ -619,7 +625,7 @@ export default function Dashboard() {
                     <TableCell className="text-xs text-muted-foreground">{lookup(motivos, d.motivoId)}</TableCell>
                     <TableCell className="text-right tabular text-sm">{quantidadeTotal(d)}</TableCell>
                     <TableCell className="text-right tabular text-sm font-medium">
-                      {d.status === "dispute" ? "R$ 1,00" : fmtBRL(valorEfetivo(d))}
+                      {d.status === "dispute" ? "R$ 1,00" : fmtBRL(valorEfetivo(d, motivos))}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={d.status} />

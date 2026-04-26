@@ -71,12 +71,14 @@ export const seedTamanhos: Tamanho[] = [
 ];
 
 export const seedMotivos: Motivo[] = [
-  { id: id("mot", 1), nome: "Produto com defeito" },
-  { id: id("mot", 2), nome: "Não corresponde ao anúncio" },
-  { id: id("mot", 3), nome: "Arrependimento de compra" },
-  { id: id("mot", 4), nome: "Produto errado enviado" },
-  { id: id("mot", 5), nome: "Problema na entrega" },
-  { id: id("mot", 6), nome: "Outro" },
+  // geraPerda = true → erro do vendedor (gera perda operacional)
+  { id: id("mot", 1), nome: "Produto com defeito", geraPerda: true },
+  { id: id("mot", 4), nome: "Produto errado enviado", geraPerda: true },
+  { id: id("mot", 5), nome: "Problema na entrega", geraPerda: true },
+  // geraPerda = false → erro do cliente / sem custo para o vendedor
+  { id: id("mot", 2), nome: "Não corresponde ao anúncio", geraPerda: false },
+  { id: id("mot", 3), nome: "Arrependimento de compra", geraPerda: false },
+  { id: id("mot", 6), nome: "Outro", geraPerda: false },
 ];
 
 const today = new Date();

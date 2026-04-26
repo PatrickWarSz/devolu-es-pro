@@ -44,6 +44,10 @@ export interface Tamanho {
 export interface Motivo {
   id: ID;
   nome: string;
+  /** Se true, devoluções com este motivo geram perda operacional para o vendedor
+   *  (ex.: defeito, envio errado). Se false, são "sem perda" (ex.: arrependimento)
+   *  e não entram em valor recuperado nem em valor de perda no dashboard. */
+  geraPerda?: boolean;
 }
 
 /** Item individual dentro de uma devolução. Uma devolução pode ter N itens

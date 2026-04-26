@@ -81,19 +81,110 @@ export default function Configuracoes() {
               del={(id) => useStore.getState().deleteTamanho(id)}
               storeKey="tamanhos"
             />
-            <CatalogoPanel
-              title="Motivos"
-              items={useStore.getState().motivos}
-              add={(n) => useStore.getState().addMotivo(n)}
-              del={(id) => useStore.getState().deleteMotivo(id)}
-              storeKey="motivos"
-            />
+            <MotivosPanel />
           </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+function MotivosPanel() {
+  const motivos = useStore((s) => s.motivos);
+  const addMotivo = useStore((s) => s.addMotivo);
+  const updateMotivo = useStore((s) => s.updateMotivo);
+  const deleteMotivo = useStore((s) => s.deleteMotivo);
+  const [nome, setNome] = useState("");
+  const [geraPerda, setGeraPerda] = useState(true);
+
+  return (
+    <div className="rounded-lg border border-border bg-card shadow-xs md:col-span-2 xl:col-span-3">
+      <div className="border-b border-border px-4 py-2.5">
+        <h3 className="text-sm font-medium">Motivos de devolução</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Marque <span className="font-medium text-foreground">"Gera perda"</span> para motivos que são erro do vendedor
+          (defeito, envio errado). Motivos sem perda não entram em valor recuperado nem em valor de perda no dashboard.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-end gap-2 border-b border-border bg-surface-muted/40 p-3">
+        <div className="flex-1 min-w-[180px]">
+          <label className="text-[11px] font-medium text-muted-foreground">Nome</label>
+          <Input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && nome.trim()) {
+                addMotivo(nome.trim(), geraPerda);
+                setNome("");
+              }
+            }}
+            placeholder="Ex: Embalagem danificada"
+            className="h-8"
+          />
+        </div>
+        <label className="flex items-center gap-2 h-8 px-2 rounded border border-border bg-card text-xs cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={geraPerda}
+            onChange={(e) => setGeraPerda(e.target.checked)}
+            className="h-3.5 w-3.5 accent-primary"
+          />
+          Gera perda operacional
+        </label>
+        <Button
+          size="sm"
+          disabled={!nome.trim()}
+          onClick={() => {
+            addMotivo(nome.trim(), geraPerda);
+            setNome("");
+          }}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Adicionar
+        </Button>
+      </div>
+      <ul className="divide-y divide-border">
+        {motivos.map((m) => {
+          const ativo = m.geraPerda !== false;
+          return (
+            <li key={m.id} className="flex items-center justify-between px-4 py-2 group gap-3">
+              <span className="text-sm flex-1 min-w-0 truncate">{m.nome}</span>
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none shrink-0">
+                <input
+                  type="checkbox"
+                  checked={ativo}
+                  onChange={(e) => updateMotivo(m.id, { geraPerda: e.target.checked })}
+                  className="h-3.5 w-3.5 accent-primary"
+                />
+                <span className={cn(
+                  "rounded px-1.5 py-0.5 border text-[10px] font-medium uppercase tracking-wider",
+                  ativo
+                    ? "bg-destructive-soft text-destructive-soft-foreground border-destructive/30"
+                    : "bg-muted text-muted-foreground border-border",
+                )}>
+                  {ativo ? "Gera perda" : "Sem perda"}
+                </span>
+              </label>
+              <button
+                onClick={() => deleteMotivo(m.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
+                aria-label="Excluir"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          );
+        })}
+        {motivos.length === 0 && (
+          <li className="px-4 py-3 text-xs text-muted-foreground text-center">
+            Nenhum motivo cadastrado.
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
 
 function EmpresasPanel() {
   const empresas = useStore((s) => s.empresas);
