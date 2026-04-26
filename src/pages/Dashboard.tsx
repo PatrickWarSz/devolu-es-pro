@@ -667,6 +667,43 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir registro de devolução?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluir && (
+                <>
+                  Você vai remover permanentemente o pedido{" "}
+                  <span className="font-mono font-medium">
+                    {excluir.devolucaoId || excluir.pedidoId || "(sem ID)"}
+                  </span>
+                  {" "}({fmtBRL(valorTotal(excluir))} · {statusLabel[excluir.status]}).
+                  {" "}Esta ação não pode ser desfeita.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!excluir) return;
+                deleteDevolucao(excluir.id);
+                toast({
+                  title: "Registro excluído",
+                  description: `${excluir.devolucaoId || excluir.pedidoId || "Pedido"} removido.`,
+                });
+                setExcluir(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
