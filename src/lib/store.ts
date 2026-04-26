@@ -284,17 +284,39 @@ export const useStore = create<State & Actions>()(
     }),
     {
       name: "devolucoes-pro-v1",
-      version: 2,
+      version: 3,
       migrate: (persistedState, version) => {
         const s = persistedState as Partial<State> | undefined;
         if (!s) return s as unknown as State & Actions;
-        if (version < 2 && Array.isArray(s.devolucoes)) {
-          return {
-            ...s,
-            devolucoes: (s.devolucoes as LegacyDevolucao[]).map(migrateDevolucao),
-          } as unknown as State & Actions;
+        let next = s;
+        if (version < 2 && Array.isArray(next.devolucoes)) {
+          next = {
+            ...next,
+            devolucoes: (next.devolucoes as LegacyDevolucao[]).map(migrateDevolucao),
+          };
         }
-        return s as unknown as State & Actions;
+        if (version < 3 && Array.isArray(next.motivos)) {
+          // Defaults conhecidos por nome (case-insensitive). Tudo que não casar
+          // assume true (gera perda) — comportamento legado seguro.
+          const defaults: Record<string, boolean> = {
+            "produto com defeito": true,
+            "produto errado enviado": true,
+            "problema na entrega": true,
+            "não corresponde ao anúncio": false,
+            "nao corresponde ao anuncio": false,
+            "arrependimento de compra": false,
+            "outro": false,
+          };
+          next = {
+            ...next,
+            motivos: (next.motivos as Motivo[]).map((m) => {
+              if (typeof m.geraPerda === "boolean") return m;
+              const guess = defaults[m.nome.trim().toLowerCase()];
+              return { ...m, geraPerda: guess ?? true };
+            }),
+          };
+        }
+        return next as unknown as State & Actions;
       },
     },
   ),
