@@ -12,6 +12,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   downloadCSV,
   fmtBRL,
   fmtBRLCompact,
@@ -30,7 +40,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, TrendingDown, Activity, Percent, Package, Ruler, Palette, Wrench } from "lucide-react";
+import { Download, TrendingDown, Activity, Percent, Package, Ruler, Palette, Wrench, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { Devolucao } from "@/lib/types";
 import {
   Bar,
   BarChart,
@@ -58,11 +70,13 @@ const ALL = "__all__";
 
 export default function Dashboard() {
   const devolucoes = useStore((s) => s.devolucoes);
+  const deleteDevolucao = useStore((s) => s.deleteDevolucao);
   const empresas = useStore((s) => s.empresas);
   const plataformas = useStore((s) => s.plataformas);
   const modelos = useStore((s) => s.modelos);
   const pecas = useStore((s) => s.pecas);
   const motivos = useStore((s) => s.motivos);
+  const { toast } = useToast();
 
   const [fEmpresa, setFEmpresa] = useState(ALL);
   const [fPlataforma, setFPlataforma] = useState(ALL);
@@ -71,6 +85,7 @@ export default function Dashboard() {
   const [fCompetencia, setFCompetencia] = useState(ALL);
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [excluir, setExcluir] = useState<Devolucao | null>(null);
   const PAGE = 12;
 
   const competencias = useMemo(() => {
@@ -575,6 +590,7 @@ export default function Dashboard() {
                 <TableHead className="text-right">Qtd</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="w-[40px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -582,7 +598,7 @@ export default function Dashboard() {
                 const principal = d.itens[0];
                 const restante = d.itens.length - 1;
                 return (
-                  <TableRow key={d.id}>
+                  <TableRow key={d.id} className="group">
                     <TableCell className="text-xs text-muted-foreground tabular">{fmtDate(d.createdAt)}</TableCell>
                     <TableCell className="text-sm">
                       <div className="font-medium">{lookup(empresas, d.empresaId)}</div>
@@ -608,12 +624,23 @@ export default function Dashboard() {
                     <TableCell>
                       <StatusBadge status={d.status} />
                     </TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => setExcluir(d)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-destructive-soft/40"
+                        aria-label="Excluir registro"
+                        title="Excluir registro"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </TableCell>
                   </TableRow>
                 );
               })}
               {pageData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
                     Nenhum registro encontrado com esses filtros.
                   </TableCell>
                 </TableRow>
@@ -640,6 +667,43 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir registro de devolução?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluir && (
+                <>
+                  Você vai remover permanentemente o pedido{" "}
+                  <span className="font-mono font-medium">
+                    {excluir.devolucaoId || excluir.pedidoId || "(sem ID)"}
+                  </span>
+                  {" "}({fmtBRL(valorTotal(excluir))} · {statusLabel[excluir.status]}).
+                  {" "}Esta ação não pode ser desfeita.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!excluir) return;
+                deleteDevolucao(excluir.id);
+                toast({
+                  title: "Registro excluído",
+                  description: `${excluir.devolucaoId || excluir.pedidoId || "Pedido"} removido.`,
+                });
+                setExcluir(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

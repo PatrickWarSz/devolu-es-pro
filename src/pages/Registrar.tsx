@@ -24,6 +24,7 @@ interface FormState {
   devolucaoId: string;
   motivoId: string;
   status: ReturnStatus;
+  valorPedido: number; // valor total da devolução (único, não por item)
   itens: ItemForm[];
 }
 
@@ -52,6 +53,7 @@ const empty = (): FormState => ({
   devolucaoId: "",
   motivoId: "",
   status: "resolved",
+  valorPedido: 0,
   itens: [emptyItem()],
 });
 
@@ -145,21 +147,19 @@ export default function Registrar() {
   const isDefeito = !!motivoSelecionado?.nome.toLowerCase().includes("defeito");
 
   const itensValidos = form.itens.filter(
-    (it) => it.modeloId && Number(it.quantidade) > 0 && Number(it.valor) >= 0,
+    (it) => it.modeloId && Number(it.quantidade) > 0,
   );
 
   const valid =
     form.empresaId &&
     form.plataformaId &&
     form.motivoId &&
+    Number(form.valorPedido) >= 0 &&
     (!pedidoObrigatorio || form.pedidoId.trim().length > 0) &&
     itensValidos.length === form.itens.length &&
     form.itens.length > 0;
 
-  const totalCalc = useMemo(
-    () => form.itens.reduce((s, it) => s + Number(it.valor || 0), 0),
-    [form.itens],
-  );
+  const totalCalc = Number(form.valorPedido || 0);
 
   // ============= Pedidos a caminho =============
 
@@ -186,6 +186,7 @@ export default function Registrar() {
   }, [idDigitado, pedidosACaminho]);
 
   const aplicarPedido = (p: PedidoACaminho) => {
+    const totalPedido = p.itens.reduce((s, it) => s + Number(it.valor || 0), 0);
     setForm((f) => ({
       ...f,
       empresaId: p.empresaId,
@@ -193,6 +194,7 @@ export default function Registrar() {
       pedidoId: p.pedidoId,
       devolucaoId: p.devolucaoId ?? "",
       motivoId: p.motivoId ?? f.motivoId,
+      valorPedido: totalPedido,
       itens: p.itens.map((it) => ({
         id: localUid(),
         modeloId: it.modeloId,
@@ -200,7 +202,7 @@ export default function Registrar() {
         cor: it.cor,
         tamanho: it.tamanho,
         quantidade: it.quantidade,
-        valor: it.valor,
+        valor: 0,
       })),
     }));
     setPedidoOriginalId(p.id);
@@ -279,14 +281,16 @@ export default function Registrar() {
       motivoId: form.motivoId,
       status: form.status,
       valorRecuperado: form.status === "resolved" ? totalCalc : undefined,
-      itens: form.itens.map((it) => ({
+      // Valor total é único da devolução. Para preservar o modelo (valor por item),
+      // colocamos todo o valor no primeiro item e zeramos os demais.
+      itens: form.itens.map((it, idx) => ({
         id: it.id,
         modeloId: it.modeloId,
         pecaId: it.pecaId,
         cor: it.cor,
         tamanho: it.tamanho,
         quantidade: Number(it.quantidade),
-        valor: Number(it.valor),
+        valor: idx === 0 ? totalCalc : 0,
       })),
     });
     // Se a devolução foi criada a partir de um pedido a caminho, remove-o da lista
@@ -557,6 +561,24 @@ export default function Registrar() {
                 className="font-mono text-sm"
               />
             </Field>
+
+            <div className="md:col-span-2">
+              <Field
+                label="Valor total da devolução (R$)"
+                required
+                hint="valor único do pedido inteiro — independente de quantos itens"
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0,00"
+                  value={form.valorPedido || ""}
+                  onChange={(e) => set("valorPedido", Number(e.target.value))}
+                  className="tabular text-base font-medium"
+                />
+              </Field>
+            </div>
           </div>
 
           {/* Status — definido antes dos itens para destravar regras (ID obrigatório, etc.) */}
@@ -825,19 +847,6 @@ function ItemRow({
             className="tabular"
           />
         </Field>
-        <div className="md:col-span-5">
-          <Field label="Valor total do item (R$)" required compact hint="o que esse item representa no pedido">
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="0,00"
-              value={item.valor}
-              onChange={(e) => onChange({ valor: Number(e.target.value) })}
-              className="tabular"
-            />
-          </Field>
-        </div>
       </div>
     </div>
   );

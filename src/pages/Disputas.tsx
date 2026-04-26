@@ -14,11 +14,21 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Calendar, Trophy, X, Package, Clock, AlertTriangle } from "lucide-react";
+import { ShieldAlert, Calendar, Trophy, X, Package, Clock, AlertTriangle, Trash2 } from "lucide-react";
 import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
 import { avaliarPrazo, prazoStatusOrder, type PrazoInfo, type PrazoStatus } from "@/lib/disputaPrazo";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Devolucao } from "@/lib/types";
 
 type ResolucaoKind = "win" | "loss";
@@ -38,6 +48,7 @@ const prazoBadgeCls: Record<PrazoStatus, string> = {
 export default function Disputas() {
   const devolucoes = useStore((s) => s.devolucoes);
   const setStatus = useStore((s) => s.setStatus);
+  const deleteDevolucao = useStore((s) => s.deleteDevolucao);
   const empresas = useStore((s) => s.empresas);
   const plataformas = useStore((s) => s.plataformas);
   const modelos = useStore((s) => s.modelos);
@@ -47,6 +58,7 @@ export default function Disputas() {
 
   const [resolucao, setResolucao] = useState<ResolucaoState | null>(null);
   const [valorFinal, setValorFinal] = useState("");
+  const [excluir, setExcluir] = useState<Devolucao | null>(null);
 
   const disputas = useMemo(
     () =>
@@ -255,6 +267,15 @@ export default function Disputas() {
                         <X className="h-3.5 w-3.5 mr-1" />
                         Perdi
                       </Button>
+                      <button
+                        type="button"
+                        onClick={() => setExcluir(d)}
+                        className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive-soft/40 transition-colors"
+                        aria-label="Excluir registro"
+                        title="Excluir registro"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
                   {restante > 0 && (
@@ -330,6 +351,42 @@ export default function Disputas() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir registro de devolução?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluir && (
+                <>
+                  Você vai remover permanentemente o pedido{" "}
+                  <span className="font-mono font-medium">
+                    {excluir.devolucaoId || excluir.pedidoId || "(sem ID)"}
+                  </span>
+                  {" "}({fmtBRL(valorTotal(excluir))}). Esta ação não pode ser desfeita.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!excluir) return;
+                deleteDevolucao(excluir.id);
+                toast({
+                  title: "Registro excluído",
+                  description: `${excluir.devolucaoId || excluir.pedidoId || "Pedido"} removido.`,
+                });
+                setExcluir(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
