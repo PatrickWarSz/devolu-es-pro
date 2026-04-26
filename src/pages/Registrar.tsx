@@ -147,21 +147,19 @@ export default function Registrar() {
   const isDefeito = !!motivoSelecionado?.nome.toLowerCase().includes("defeito");
 
   const itensValidos = form.itens.filter(
-    (it) => it.modeloId && Number(it.quantidade) > 0 && Number(it.valor) >= 0,
+    (it) => it.modeloId && Number(it.quantidade) > 0,
   );
 
   const valid =
     form.empresaId &&
     form.plataformaId &&
     form.motivoId &&
+    Number(form.valorPedido) >= 0 &&
     (!pedidoObrigatorio || form.pedidoId.trim().length > 0) &&
     itensValidos.length === form.itens.length &&
     form.itens.length > 0;
 
-  const totalCalc = useMemo(
-    () => form.itens.reduce((s, it) => s + Number(it.valor || 0), 0),
-    [form.itens],
-  );
+  const totalCalc = Number(form.valorPedido || 0);
 
   // ============= Pedidos a caminho =============
 
