@@ -171,6 +171,20 @@ export default function Registrar() {
       .slice(0, 5);
   }, [pedidoBusca, pedidosACaminho]);
 
+  // Detecção em tempo real: o ID que o usuário está digitando (no campo de
+  // busca OU no ID do Pedido do formulário) já existe em algum lugar?
+  // Avisa ANTES de gastar tempo preenchendo o restante.
+  const idDigitado = (pedidoBusca.trim() || form.pedidoId.trim()).toLowerCase();
+  const devolucaoExistente = useMemo(() => {
+    if (!idDigitado) return null;
+    return devolucoes.find((d) => d.pedidoId.trim().toLowerCase() === idDigitado) ?? null;
+  }, [idDigitado, devolucoes]);
+  const aCaminhoExistente = useMemo(() => {
+    if (!idDigitado) return null;
+    // Só considera "match exato" para não atrapalhar a digitação de IDs longos
+    return pedidosACaminho.find((p) => p.pedidoId.trim().toLowerCase() === idDigitado) ?? null;
+  }, [idDigitado, pedidosACaminho]);
+
   const aplicarPedido = (p: PedidoACaminho) => {
     setForm((f) => ({
       ...f,
@@ -412,6 +426,62 @@ export default function Registrar() {
               </div>
             )}
           </div>
+
+          {/* Aviso anti-duplicidade — em tempo real, antes do usuário perder tempo */}
+          {(devolucaoExistente || (aCaminhoExistente && pedidoOriginalId !== aCaminhoExistente.id)) && (
+            <div
+              className={cn(
+                "border-b px-5 py-3 flex items-start gap-3",
+                devolucaoExistente
+                  ? "bg-destructive-soft/60 border-destructive/30"
+                  : "bg-warning-soft/60 border-warning/30",
+              )}
+            >
+              {devolucaoExistente ? (
+                <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0 text-sm">
+                {devolucaoExistente ? (
+                  <>
+                    <p className="font-medium text-destructive-soft-foreground">
+                      Este pedido já foi registrado
+                    </p>
+                    <p className="text-xs text-destructive-soft-foreground/80 mt-0.5">
+                      <span className="font-mono">{devolucaoExistente.pedidoId}</span> ·{" "}
+                      {statusLabel[devolucaoExistente.status]} ·{" "}
+                      {fmtDateTime(devolucaoExistente.createdAt)}. Não cadastre de novo —
+                      verifique a Fila ou Disputas.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium text-warning-soft-foreground">
+                      Este pedido já está "a caminho"
+                    </p>
+                    <p className="text-xs text-warning-soft-foreground/80 mt-0.5">
+                      Você já pré-cadastrou{" "}
+                      <span className="font-mono font-medium">{aCaminhoExistente!.pedidoId}</span>.
+                      Use o botão abaixo para puxar os dados em vez de preencher tudo de novo.
+                    </p>
+                  </>
+                )}
+              </div>
+              {aCaminhoExistente && !devolucaoExistente && pedidoOriginalId !== aCaminhoExistente.id && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => aplicarPedido(aCaminhoExistente)}
+                  className="h-7 shrink-0"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Puxar dados
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* Cabeçalho da devolução */}
           <div className="grid gap-x-4 gap-y-4 p-5 md:grid-cols-2">
