@@ -186,6 +186,7 @@ export default function Registrar() {
   }, [idDigitado, pedidosACaminho]);
 
   const aplicarPedido = (p: PedidoACaminho) => {
+    const totalPedido = p.itens.reduce((s, it) => s + Number(it.valor || 0), 0);
     setForm((f) => ({
       ...f,
       empresaId: p.empresaId,
@@ -193,6 +194,7 @@ export default function Registrar() {
       pedidoId: p.pedidoId,
       devolucaoId: p.devolucaoId ?? "",
       motivoId: p.motivoId ?? f.motivoId,
+      valorPedido: totalPedido,
       itens: p.itens.map((it) => ({
         id: localUid(),
         modeloId: it.modeloId,
@@ -200,7 +202,7 @@ export default function Registrar() {
         cor: it.cor,
         tamanho: it.tamanho,
         quantidade: it.quantidade,
-        valor: it.valor,
+        valor: 0,
       })),
     }));
     setPedidoOriginalId(p.id);
