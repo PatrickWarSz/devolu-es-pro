@@ -504,16 +504,6 @@ function ItemRow({
             className="tabular"
           />
         </Field>
-        <Field label="Valor total" compact>
-          <Input
-            type="number"
-            min={0}
-            step="0.01"
-            value={item.valor}
-            onChange={(e) => onChange({ valor: Number(e.target.value) })}
-            className="tabular"
-          />
-        </Field>
       </div>
     </div>
   );
