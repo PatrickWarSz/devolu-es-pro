@@ -12,6 +12,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   downloadCSV,
   fmtBRL,
   fmtBRLCompact,
@@ -30,7 +40,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, TrendingDown, Activity, Percent, Package, Ruler, Palette, Wrench } from "lucide-react";
+import { Download, TrendingDown, Activity, Percent, Package, Ruler, Palette, Wrench, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { Devolucao } from "@/lib/types";
 import {
   Bar,
   BarChart,
