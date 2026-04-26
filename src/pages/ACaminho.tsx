@@ -264,6 +264,18 @@ export default function ACaminho() {
                 onChange={(e) => set("notas", e.target.value)}
               />
             </Field>
+
+            <Field label="Valor total da devolução (R$)" required hint="valor único do pedido inteiro">
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0,00"
+                value={form.valorPedido || ""}
+                onChange={(e) => set("valorPedido", Number(e.target.value))}
+                className="tabular text-base font-medium"
+              />
+            </Field>
           </div>
 
           <div className="border-t border-border bg-surface-muted/30 px-5 py-3 flex items-center justify-between">
