@@ -24,6 +24,7 @@ interface FormState {
   devolucaoId: string;
   motivoId: string;
   status: ReturnStatus;
+  valorPedido: number; // valor total da devolução (único, não por item)
   itens: ItemForm[];
 }
 
@@ -52,6 +53,7 @@ const empty = (): FormState => ({
   devolucaoId: "",
   motivoId: "",
   status: "resolved",
+  valorPedido: 0,
   itens: [emptyItem()],
 });
 
