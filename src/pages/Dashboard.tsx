@@ -151,7 +151,7 @@ export default function Dashboard() {
     filtradas.forEach((d) => {
       const key = d.competencia;
       const cur = map.get(key) ?? { mes: key, resolvidas: 0, disputas: 0, perdas: 0 };
-      const v = valorEfetivo(d);
+      const v = valorEfetivo(d, motivos);
       if (d.status === "resolved") cur.resolvidas += v;
       else if (d.status === "dispute") cur.disputas += v;
       else cur.perdas += v;
