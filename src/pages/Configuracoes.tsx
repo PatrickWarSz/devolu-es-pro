@@ -184,12 +184,7 @@ function MotivosPanel() {
     </div>
   );
 }
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+
 
 function EmpresasPanel() {
   const empresas = useStore((s) => s.empresas);
