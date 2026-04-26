@@ -538,6 +538,28 @@ export default function Registrar() {
                 placeholder="Selecione o motivo"
                 options={motivos.map((m) => ({ value: m.id, label: m.nome }))}
               />
+              {motivoSelecionado && (
+                <p
+                  className={
+                    "mt-1.5 text-[11px] leading-tight " +
+                    (motivoSelecionado.geraPerda === false
+                      ? "text-muted-foreground"
+                      : "text-destructive-soft-foreground")
+                  }
+                >
+                  {motivoSelecionado.geraPerda === false ? (
+                    <>
+                      <span className="font-medium">Sem perda operacional.</span>{" "}
+                      Não conta em valor recuperado/perda no dashboard.
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium">Gera perda operacional.</span>{" "}
+                      Entra nos cálculos financeiros do dashboard.
+                    </>
+                  )}
+                </p>
+              )}
             </Field>
 
             <Field
