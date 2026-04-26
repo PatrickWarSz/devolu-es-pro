@@ -171,6 +171,20 @@ export default function Registrar() {
       .slice(0, 5);
   }, [pedidoBusca, pedidosACaminho]);
 
+  // Detecção em tempo real: o ID que o usuário está digitando (no campo de
+  // busca OU no ID do Pedido do formulário) já existe em algum lugar?
+  // Avisa ANTES de gastar tempo preenchendo o restante.
+  const idDigitado = (pedidoBusca.trim() || form.pedidoId.trim()).toLowerCase();
+  const devolucaoExistente = useMemo(() => {
+    if (!idDigitado) return null;
+    return devolucoes.find((d) => d.pedidoId.trim().toLowerCase() === idDigitado) ?? null;
+  }, [idDigitado, devolucoes]);
+  const aCaminhoExistente = useMemo(() => {
+    if (!idDigitado) return null;
+    // Só considera "match exato" para não atrapalhar a digitação de IDs longos
+    return pedidosACaminho.find((p) => p.pedidoId.trim().toLowerCase() === idDigitado) ?? null;
+  }, [idDigitado, pedidosACaminho]);
+
   const aplicarPedido = (p: PedidoACaminho) => {
     setForm((f) => ({
       ...f,
