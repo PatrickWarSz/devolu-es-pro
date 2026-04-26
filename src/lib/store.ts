@@ -75,7 +75,8 @@ interface Actions {
   deleteCor: (id: string) => void;
   addTamanho: (nome: string) => Tamanho;
   deleteTamanho: (id: string) => void;
-  addMotivo: (nome: string) => Motivo;
+  addMotivo: (nome: string, geraPerda?: boolean) => Motivo;
+  updateMotivo: (id: string, patch: Partial<Motivo>) => void;
   deleteMotivo: (id: string) => void;
 
   setTheme: (t: "light" | "dark") => void;
@@ -256,11 +257,15 @@ export const useStore = create<State & Actions>()(
         return n;
       },
       deleteTamanho: (id) => set((s) => ({ tamanhos: s.tamanhos.filter((x) => x.id !== id) })),
-      addMotivo: (nome) => {
-        const n = { id: uid("mot"), nome };
+      addMotivo: (nome, geraPerda) => {
+        const n: Motivo = { id: uid("mot"), nome, geraPerda: geraPerda ?? true };
         set((s) => ({ motivos: [...s.motivos, n] }));
         return n;
       },
+      updateMotivo: (id, patch) =>
+        set((s) => ({
+          motivos: s.motivos.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+        })),
       deleteMotivo: (id) => set((s) => ({ motivos: s.motivos.filter((x) => x.id !== id) })),
 
       setTheme: (t) => set({ theme: t }),
