@@ -13,9 +13,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ShieldAlert, Calendar, Trophy, X, Package, Clock, AlertTriangle, Trash2 } from "lucide-react";
-import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
+import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal, motivoGeraPerda } from "@/lib/format";
 import { avaliarPrazo, prazoStatusOrder, type PrazoInfo, type PrazoStatus } from "@/lib/disputaPrazo";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
