@@ -77,6 +77,7 @@ export default function Dashboard() {
   const modelos = useStore((s) => s.modelos);
   const pecas = useStore((s) => s.pecas);
   const motivos = useStore((s) => s.motivos);
+  const tiposDefeito = useStore((s) => s.tiposDefeito);
   const { toast } = useToast();
 
   const [fEmpresa, setFEmpresa] = useState(ALL);
@@ -164,7 +165,7 @@ export default function Dashboard() {
         ...m,
         label: m.mes.split("-").reverse().join("/"),
       }));
-  }, [filtradas]);
+  }, [filtradas, motivos]);
 
   const porEmpresa = useMemo(() => {
     const map = new Map<string, number>();
