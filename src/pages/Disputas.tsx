@@ -336,23 +336,53 @@ export default function Disputas() {
                 : ""}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label className="text-xs">
-              {resolucao?.kind === "win" ? "Valor recuperado (R$)" : "Valor da perda (R$)"}
-            </Label>
-            <Input
-              type="number"
-              step="0.01"
-              min={0}
-              value={valorFinal}
-              onChange={(e) => setValorFinal(e.target.value)}
-              autoFocus
-              className="tabular"
-            />
-            {resolucao && (
-              <p className="text-xs text-muted-foreground">
-                Valor bruto da devolução: {fmtBRL(valorTotal(resolucao.devolucao))}
-              </p>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">
+                {resolucao?.kind === "win" ? "Valor recuperado (R$)" : "Valor da perda (R$)"}
+              </Label>
+              <Input
+                type="number"
+                step="0.01"
+                min={0}
+                value={valorFinal}
+                onChange={(e) => setValorFinal(e.target.value)}
+                autoFocus
+                className="tabular"
+              />
+              {resolucao && (
+                <p className="text-xs text-muted-foreground">
+                  Valor bruto da devolução: {fmtBRL(valorTotal(resolucao.devolucao))}
+                </p>
+              )}
+            </div>
+
+            {exigeTipoDefeito && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  Tipo de defeito constatado{" "}
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
+                </Label>
+                <Select
+                  value={tipoDefeitoId || "__none__"}
+                  onValueChange={(v) => setTipoDefeitoId(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selecione o tipo de defeito…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Não informar —</SelectItem>
+                    {tiposDefeito.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Ajuda a entender padrões de problema (rasgo, mancha, item amassado…) no dashboard.
+                </p>
+              </div>
             )}
           </div>
           <DialogFooter>
