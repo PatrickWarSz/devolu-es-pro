@@ -339,34 +339,6 @@ export default function Disputas() {
                 </p>
               )}
             </div>
-
-            {exigeTipoDefeito && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">
-                  Tipo de defeito constatado{" "}
-                  <span className="text-muted-foreground font-normal">(opcional)</span>
-                </Label>
-                <Select
-                  value={tipoDefeitoId || "__none__"}
-                  onValueChange={(v) => setTipoDefeitoId(v === "__none__" ? "" : v)}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Selecione o tipo de defeito…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Não informar —</SelectItem>
-                    {tiposDefeito.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Ajuda a entender padrões de problema (rasgo, mancha, item amassado…) no dashboard.
-                </p>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={fecharResolucao}>
