@@ -292,6 +292,7 @@ export default function Registrar() {
       pedidoId: form.pedidoId.trim(),
       devolucaoId: form.devolucaoId.trim(),
       motivoId: form.motivoId,
+      tipoDefeitoId: exigeTipoDefeito ? form.tipoDefeitoId || undefined : undefined,
       status: form.status,
       valorRecuperado: form.status === "resolved" ? totalCalc : undefined,
       // Valor total é único da devolução. Para preservar o modelo (valor por item),
