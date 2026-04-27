@@ -555,7 +555,7 @@ export default function Dashboard() {
 
           <RankingCard
             title="Modelo + Tamanho"
-            subtitle="Indicador de problemas de modelagem"
+            subtitle="Indicador de problemas de modelagem (ex: 'G está pequeno')"
             icon={<Ruler className="h-3.5 w-3.5" />}
             empty="Nenhum item com tamanho informado."
             accent="warning"
@@ -563,6 +563,7 @@ export default function Dashboard() {
               key: `${r.modelo}-${r.tamanho}`,
               primary: r.modelo,
               badge: r.tamanho,
+              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
               value: r.qtd,
             }))}
           />
@@ -577,20 +578,21 @@ export default function Dashboard() {
               key: `${r.modelo}-${r.cor}`,
               primary: r.modelo,
               badge: r.cor,
+              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
               value: r.qtd,
             }))}
           />
 
           <RankingCard
-            title="Peças com defeito"
-            subtitle="Apenas devoluções com motivo de defeito"
+            title="Tipos de defeito constatados"
+            subtitle="Informados ao finalizar a devolução (Ganhei / Perdi)"
             icon={<Wrench className="h-3.5 w-3.5" />}
-            empty="Nenhuma devolução por defeito com peça informada."
+            empty="Nenhum tipo de defeito informado ainda. Marque ao resolver disputas."
             accent="destructive"
-            rows={topPecasDefeito.map((r) => ({
-              key: `${r.modelo}-${r.peca}`,
-              primary: r.modelo,
-              secondary: r.peca,
+            rows={topTiposDefeito.map((r) => ({
+              key: r.tipo,
+              primary: r.tipo,
+              secondary: `${r.modeloTop} · ${r.modeloTopQtd} ${r.modeloTopQtd === 1 ? "caso" : "casos"}`,
               value: r.qtd,
             }))}
           />
