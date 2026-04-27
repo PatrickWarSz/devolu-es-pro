@@ -148,6 +148,9 @@ export default function Registrar() {
   // Detecta se o motivo selecionado é "defeito" (case-insensitive, match parcial)
   const motivoSelecionado = motivos.find((m) => m.id === form.motivoId);
   const isDefeito = !!motivoSelecionado?.nome.toLowerCase().includes("defeito");
+  // Tipo de defeito só faz sentido quando o motivo gera perda operacional
+  // (defeito, envio errado etc.). Para arrependimento/não serviu não aparece.
+  const exigeTipoDefeito = !!form.motivoId && motivoGeraPerda(motivos, form.motivoId);
 
   const itensValidos = form.itens.filter(
     (it) => it.modeloId && Number(it.quantidade) > 0,
