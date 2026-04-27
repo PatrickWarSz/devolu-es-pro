@@ -136,6 +136,7 @@ export const useStore = create<State & Actions>()(
       cores: seedCores,
       tamanhos: seedTamanhos,
       motivos: seedMotivos,
+      tiposDefeito: seedTiposDefeito,
       devolucoes: seedDevolucoes,
       pedidosACaminho: [],
       theme: "light",
@@ -156,7 +157,7 @@ export const useStore = create<State & Actions>()(
         })),
       deleteDevolucao: (id) =>
         set((s) => ({ devolucoes: s.devolucoes.filter((d) => d.id !== id) })),
-      setStatus: (id, status, valorRecuperado) =>
+      setStatus: (id, status, valorRecuperado, tipoDefeitoId) =>
         set((s) => ({
           devolucoes: s.devolucoes.map((d) => {
             if (d.id !== id) return d;
@@ -168,8 +169,12 @@ export const useStore = create<State & Actions>()(
                 status === "resolved"
                   ? valorRecuperado ?? total
                   : status === "loss"
-                  ? 0
+                  ? valorRecuperado ?? 0
                   : d.valorRecuperado,
+              // Atualiza tipo de defeito apenas se foi passado; finalizando para
+              // dispute (reabrir) preserva o que já existia.
+              tipoDefeitoId:
+                tipoDefeitoId !== undefined ? tipoDefeitoId || undefined : d.tipoDefeitoId,
             };
           }),
         })),
