@@ -576,6 +576,25 @@ export default function Registrar() {
               )}
             </Field>
 
+            {exigeTipoDefeito && (
+              <Field
+                label="Tipo de defeito constatado"
+                hint="opcional · ajuda nas análises"
+              >
+                <QuickSelect
+                  value={form.tipoDefeitoId || "__none__"}
+                  onValueChange={(v) =>
+                    set("tipoDefeitoId", v === "__none__" ? "" : v)
+                  }
+                  placeholder="Selecione o tipo de defeito"
+                  options={[
+                    { value: "__none__", label: "— Não informar —" },
+                    ...tiposDefeito.map((t) => ({ value: t.id, label: t.nome })),
+                  ]}
+                />
+              </Field>
+            )}
+
             <Field
               label="ID do Pedido"
               required={pedidoObrigatorio}
