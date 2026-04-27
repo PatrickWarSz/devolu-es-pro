@@ -13,6 +13,7 @@ import type {
   Plataforma,
   ReturnStatus,
   Tamanho,
+  TipoDefeito,
 } from "./types";
 import {
   seedContas,
@@ -24,6 +25,7 @@ import {
   seedPecas,
   seedPlataformas,
   seedTamanhos,
+  seedTiposDefeito,
 } from "./seed";
 import { valorTotal } from "./format";
 
@@ -39,6 +41,7 @@ interface State {
   cores: Cor[];
   tamanhos: Tamanho[];
   motivos: Motivo[];
+  tiposDefeito: TipoDefeito[];
   devolucoes: Devolucao[];
   pedidosACaminho: PedidoACaminho[];
   theme: "light" | "dark";
@@ -49,7 +52,7 @@ interface Actions {
   addDevolucao: (d: Omit<Devolucao, "id" | "createdAt">) => Devolucao;
   updateDevolucao: (id: string, patch: Partial<Devolucao>) => void;
   deleteDevolucao: (id: string) => void;
-  setStatus: (id: string, status: ReturnStatus, valorRecuperado?: number) => void;
+  setStatus: (id: string, status: ReturnStatus, valorRecuperado?: number, tipoDefeitoId?: string) => void;
 
   // Pedidos a caminho
   addPedidoACaminho: (p: Omit<PedidoACaminho, "id" | "createdAt">) => PedidoACaminho;
@@ -78,6 +81,8 @@ interface Actions {
   addMotivo: (nome: string, geraPerda?: boolean) => Motivo;
   updateMotivo: (id: string, patch: Partial<Motivo>) => void;
   deleteMotivo: (id: string) => void;
+  addTipoDefeito: (nome: string) => TipoDefeito;
+  deleteTipoDefeito: (id: string) => void;
 
   setTheme: (t: "light" | "dark") => void;
   resetSeed: () => void;
