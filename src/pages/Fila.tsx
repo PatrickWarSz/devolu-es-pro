@@ -94,7 +94,7 @@ export default function Fila() {
         Empresa: lookup(empresas, d.empresaId),
         Plataforma: lookup(plataformas, d.plataformaId),
         Modelo: lookup(modelos, it.modeloId),
-        Peca: lookup(pecas, it.pecaId),
+        Componente: lookup(pecas, it.pecaId),
         Cor: it.cor,
         Tamanho: it.tamanho,
         Motivo: lookup(motivos, d.motivoId),

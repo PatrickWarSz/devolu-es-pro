@@ -26,7 +26,16 @@ export interface Modelo {
   nome: string;
 }
 
+/** Componente do produto (ex.: legging, top, tela, carregador, peça única).
+ *  Antes chamado de "Peça" — mantemos a chave `pecas` no store por compatibilidade. */
 export interface Peca {
+  id: ID;
+  nome: string;
+}
+
+/** Tipo de defeito constatado quando uma devolução é finalizada por motivo
+ *  que gera perda operacional (ex.: rasgo na costura, mancha, tela quebrada). */
+export interface TipoDefeito {
   id: ID;
   nome: string;
 }
@@ -90,6 +99,9 @@ export interface Devolucao {
   status: ReturnStatus;
   /** valor total recuperado quando a disputa é ganha */
   valorRecuperado?: number;
+  /** Tipo de defeito constatado — preenchido apenas ao finalizar a devolução
+   *  como Resolvida ou Perda quando o motivo gera perda operacional. */
+  tipoDefeitoId?: ID;
   notas?: string;
   itens: DevolucaoItem[];
 }

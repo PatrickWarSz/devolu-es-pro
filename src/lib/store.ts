@@ -13,6 +13,7 @@ import type {
   Plataforma,
   ReturnStatus,
   Tamanho,
+  TipoDefeito,
 } from "./types";
 import {
   seedContas,
@@ -24,6 +25,7 @@ import {
   seedPecas,
   seedPlataformas,
   seedTamanhos,
+  seedTiposDefeito,
 } from "./seed";
 import { valorTotal } from "./format";
 
@@ -39,6 +41,7 @@ interface State {
   cores: Cor[];
   tamanhos: Tamanho[];
   motivos: Motivo[];
+  tiposDefeito: TipoDefeito[];
   devolucoes: Devolucao[];
   pedidosACaminho: PedidoACaminho[];
   theme: "light" | "dark";
@@ -49,7 +52,7 @@ interface Actions {
   addDevolucao: (d: Omit<Devolucao, "id" | "createdAt">) => Devolucao;
   updateDevolucao: (id: string, patch: Partial<Devolucao>) => void;
   deleteDevolucao: (id: string) => void;
-  setStatus: (id: string, status: ReturnStatus, valorRecuperado?: number) => void;
+  setStatus: (id: string, status: ReturnStatus, valorRecuperado?: number, tipoDefeitoId?: string) => void;
 
   // Pedidos a caminho
   addPedidoACaminho: (p: Omit<PedidoACaminho, "id" | "createdAt">) => PedidoACaminho;
@@ -78,6 +81,8 @@ interface Actions {
   addMotivo: (nome: string, geraPerda?: boolean) => Motivo;
   updateMotivo: (id: string, patch: Partial<Motivo>) => void;
   deleteMotivo: (id: string) => void;
+  addTipoDefeito: (nome: string) => TipoDefeito;
+  deleteTipoDefeito: (id: string) => void;
 
   setTheme: (t: "light" | "dark") => void;
   resetSeed: () => void;
@@ -131,6 +136,7 @@ export const useStore = create<State & Actions>()(
       cores: seedCores,
       tamanhos: seedTamanhos,
       motivos: seedMotivos,
+      tiposDefeito: seedTiposDefeito,
       devolucoes: seedDevolucoes,
       pedidosACaminho: [],
       theme: "light",
@@ -151,7 +157,7 @@ export const useStore = create<State & Actions>()(
         })),
       deleteDevolucao: (id) =>
         set((s) => ({ devolucoes: s.devolucoes.filter((d) => d.id !== id) })),
-      setStatus: (id, status, valorRecuperado) =>
+      setStatus: (id, status, valorRecuperado, tipoDefeitoId) =>
         set((s) => ({
           devolucoes: s.devolucoes.map((d) => {
             if (d.id !== id) return d;
@@ -163,8 +169,12 @@ export const useStore = create<State & Actions>()(
                 status === "resolved"
                   ? valorRecuperado ?? total
                   : status === "loss"
-                  ? 0
+                  ? valorRecuperado ?? 0
                   : d.valorRecuperado,
+              // Atualiza tipo de defeito apenas se foi passado; finalizando para
+              // dispute (reabrir) preserva o que já existia.
+              tipoDefeitoId:
+                tipoDefeitoId !== undefined ? tipoDefeitoId || undefined : d.tipoDefeitoId,
             };
           }),
         })),
@@ -267,6 +277,13 @@ export const useStore = create<State & Actions>()(
           motivos: s.motivos.map((m) => (m.id === id ? { ...m, ...patch } : m)),
         })),
       deleteMotivo: (id) => set((s) => ({ motivos: s.motivos.filter((x) => x.id !== id) })),
+      addTipoDefeito: (nome) => {
+        const n: TipoDefeito = { id: uid("def"), nome };
+        set((s) => ({ tiposDefeito: [...s.tiposDefeito, n] }));
+        return n;
+      },
+      deleteTipoDefeito: (id) =>
+        set((s) => ({ tiposDefeito: s.tiposDefeito.filter((x) => x.id !== id) })),
 
       setTheme: (t) => set({ theme: t }),
       resetSeed: () =>
@@ -279,12 +296,13 @@ export const useStore = create<State & Actions>()(
           cores: seedCores,
           tamanhos: seedTamanhos,
           motivos: seedMotivos,
+          tiposDefeito: seedTiposDefeito,
           devolucoes: seedDevolucoes,
         }),
     }),
     {
       name: "devolucoes-pro-v1",
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         const s = persistedState as Partial<State> | undefined;
         if (!s) return s as unknown as State & Actions;
@@ -315,6 +333,10 @@ export const useStore = create<State & Actions>()(
               return { ...m, geraPerda: guess ?? true };
             }),
           };
+        }
+        if (version < 4 && !Array.isArray(next.tiposDefeito)) {
+          // Catálogo de tipos de defeito é novo — semeia com defaults.
+          next = { ...next, tiposDefeito: seedTiposDefeito };
         }
         return next as unknown as State & Actions;
       },

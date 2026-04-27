@@ -13,9 +13,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ShieldAlert, Calendar, Trophy, X, Package, Clock, AlertTriangle, Trash2 } from "lucide-react";
-import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
+import { fmtBRL, fmtDate, daysBetween, valorTotal, quantidadeTotal, motivoGeraPerda } from "@/lib/format";
 import { avaliarPrazo, prazoStatusOrder, type PrazoInfo, type PrazoStatus } from "@/lib/disputaPrazo";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
@@ -54,11 +61,18 @@ export default function Disputas() {
   const modelos = useStore((s) => s.modelos);
   const pecas = useStore((s) => s.pecas);
   const motivos = useStore((s) => s.motivos);
+  const tiposDefeito = useStore((s) => s.tiposDefeito);
   const { toast } = useToast();
 
   const [resolucao, setResolucao] = useState<ResolucaoState | null>(null);
   const [valorFinal, setValorFinal] = useState("");
+  const [tipoDefeitoId, setTipoDefeitoId] = useState<string>("");
   const [excluir, setExcluir] = useState<Devolucao | null>(null);
+
+  // Tipo de defeito só faz sentido quando o motivo gera perda operacional.
+  const exigeTipoDefeito = resolucao
+    ? motivoGeraPerda(motivos, resolucao.devolucao.motivoId)
+    : false;
 
   const disputas = useMemo(
     () =>
@@ -97,11 +111,13 @@ export default function Disputas() {
   const abrirResolucao = (d: Devolucao, kind: ResolucaoKind) => {
     setResolucao({ devolucao: d, kind });
     setValorFinal(String(valorTotal(d)));
+    setTipoDefeitoId(d.tipoDefeitoId ?? "");
   };
 
   const fecharResolucao = () => {
     setResolucao(null);
     setValorFinal("");
+    setTipoDefeitoId("");
   };
 
   const confirmar = () => {
@@ -112,9 +128,10 @@ export default function Disputas() {
       return;
     }
     const total = valorTotal(resolucao.devolucao);
+    const tipo = exigeTipoDefeito ? tipoDefeitoId || undefined : undefined;
 
     if (resolucao.kind === "win") {
-      setStatus(resolucao.devolucao.id, "resolved", v);
+      setStatus(resolucao.devolucao.id, "resolved", v, tipo);
       toast({
         title: "Disputa ganha 🏆",
         description: `${fmtBRL(v)} recuperados${v !== total ? ` (de ${fmtBRL(total)})` : ""}.`,
@@ -122,7 +139,7 @@ export default function Disputas() {
     } else {
       // Para perda, gravamos o valor final como valorRecuperado também
       // (representa o valor "considerado" — útil quando plataforma aplica taxas).
-      setStatus(resolucao.devolucao.id, "loss", v);
+      setStatus(resolucao.devolucao.id, "loss", v, tipo);
       toast({
         title: "Perda registrada",
         description: `${fmtBRL(v)} confirmados como perda${v !== total ? ` (bruto ${fmtBRL(total)})` : ""}.`,
@@ -319,23 +336,53 @@ export default function Disputas() {
                 : ""}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label className="text-xs">
-              {resolucao?.kind === "win" ? "Valor recuperado (R$)" : "Valor da perda (R$)"}
-            </Label>
-            <Input
-              type="number"
-              step="0.01"
-              min={0}
-              value={valorFinal}
-              onChange={(e) => setValorFinal(e.target.value)}
-              autoFocus
-              className="tabular"
-            />
-            {resolucao && (
-              <p className="text-xs text-muted-foreground">
-                Valor bruto da devolução: {fmtBRL(valorTotal(resolucao.devolucao))}
-              </p>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">
+                {resolucao?.kind === "win" ? "Valor recuperado (R$)" : "Valor da perda (R$)"}
+              </Label>
+              <Input
+                type="number"
+                step="0.01"
+                min={0}
+                value={valorFinal}
+                onChange={(e) => setValorFinal(e.target.value)}
+                autoFocus
+                className="tabular"
+              />
+              {resolucao && (
+                <p className="text-xs text-muted-foreground">
+                  Valor bruto da devolução: {fmtBRL(valorTotal(resolucao.devolucao))}
+                </p>
+              )}
+            </div>
+
+            {exigeTipoDefeito && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  Tipo de defeito constatado{" "}
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
+                </Label>
+                <Select
+                  value={tipoDefeitoId || "__none__"}
+                  onValueChange={(v) => setTipoDefeitoId(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selecione o tipo de defeito…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Não informar —</SelectItem>
+                    {tiposDefeito.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Ajuda a entender padrões de problema (rasgo, mancha, item amassado…) no dashboard.
+                </p>
+              </div>
             )}
           </div>
           <DialogFooter>

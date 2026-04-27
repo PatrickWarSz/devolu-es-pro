@@ -77,6 +77,7 @@ export default function Dashboard() {
   const modelos = useStore((s) => s.modelos);
   const pecas = useStore((s) => s.pecas);
   const motivos = useStore((s) => s.motivos);
+  const tiposDefeito = useStore((s) => s.tiposDefeito);
   const { toast } = useToast();
 
   const [fEmpresa, setFEmpresa] = useState(ALL);
@@ -164,7 +165,7 @@ export default function Dashboard() {
         ...m,
         label: m.mes.split("-").reverse().join("/"),
       }));
-  }, [filtradas]);
+  }, [filtradas, motivos]);
 
   const porEmpresa = useMemo(() => {
     const map = new Map<string, number>();
@@ -221,63 +222,93 @@ export default function Dashboard() {
 
   /** Combinação modelo + tamanho — revela problemas de modelagem (ex: "G pequeno"). */
   const topModeloTamanho = useMemo(() => {
-    const map = new Map<string, { modelo: string; tamanho: string; qtd: number }>();
+    type Acc = { modelo: string; tamanho: string; qtd: number; motivos: Map<string, number> };
+    const map = new Map<string, Acc>();
     filtradas.forEach((d) => {
+      const motivoNome = lookup(motivos, d.motivoId);
       d.itens.forEach((it) => {
         const tam = it.tamanho || "—";
         const mod = lookup(modelos, it.modeloId);
         const k = `${mod}__${tam}`;
-        const cur = map.get(k) ?? { modelo: mod, tamanho: tam, qtd: 0 };
+        const cur = map.get(k) ?? { modelo: mod, tamanho: tam, qtd: 0, motivos: new Map() };
         cur.qtd += it.quantidade;
+        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
         map.set(k, cur);
       });
     });
     return Array.from(map.values())
+      .map((acc) => {
+        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
+        return {
+          modelo: acc.modelo,
+          tamanho: acc.tamanho,
+          qtd: acc.qtd,
+          motivoTop: motivoTop ? motivoTop[0] : "—",
+          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
+        };
+      })
       .sort((a, b) => b.qtd - a.qtd)
       .slice(0, 8);
-  }, [filtradas, modelos]);
+  }, [filtradas, modelos, motivos]);
 
   /** Combinação modelo + cor — revela problemas específicos de cor (ex: branco transparente). */
   const topModeloCor = useMemo(() => {
-    const map = new Map<string, { modelo: string; cor: string; qtd: number }>();
+    type Acc = { modelo: string; cor: string; qtd: number; motivos: Map<string, number> };
+    const map = new Map<string, Acc>();
     filtradas.forEach((d) => {
+      const motivoNome = lookup(motivos, d.motivoId);
       d.itens.forEach((it) => {
         const cor = it.cor || "—";
         const mod = lookup(modelos, it.modeloId);
         const k = `${mod}__${cor}`;
-        const cur = map.get(k) ?? { modelo: mod, cor, qtd: 0 };
+        const cur = map.get(k) ?? { modelo: mod, cor, qtd: 0, motivos: new Map() };
         cur.qtd += it.quantidade;
+        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
         map.set(k, cur);
       });
     });
     return Array.from(map.values())
+      .map((acc) => {
+        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
+        return {
+          modelo: acc.modelo,
+          cor: acc.cor,
+          qtd: acc.qtd,
+          motivoTop: motivoTop ? motivoTop[0] : "—",
+          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
+        };
+      })
       .sort((a, b) => b.qtd - a.qtd)
       .slice(0, 8);
-  }, [filtradas, modelos]);
+  }, [filtradas, modelos, motivos]);
 
-  /** Peças que voltam com defeito — só considera devoluções cujo motivo contém "defeito". */
-  const topPecasDefeito = useMemo(() => {
-    const motivosDefeito = new Set(
-      motivos.filter((m) => m.nome.toLowerCase().includes("defeito")).map((m) => m.id),
-    );
-    const map = new Map<string, { peca: string; modelo: string; qtd: number }>();
-    filtradas
-      .filter((d) => motivosDefeito.has(d.motivoId))
-      .forEach((d) => {
-        d.itens.forEach((it) => {
-          if (!it.pecaId) return;
-          const peca = lookup(pecas, it.pecaId);
-          const mod = lookup(modelos, it.modeloId);
-          const k = `${mod}__${peca}`;
-          const cur = map.get(k) ?? { peca, modelo: mod, qtd: 0 };
-          cur.qtd += it.quantidade;
-          map.set(k, cur);
-        });
-      });
+  /** Tipos de defeito mais constatados — só conta devoluções com tipo informado.
+   *  Cruza com o modelo principal para ajudar a identificar padrões. */
+  const topTiposDefeito = useMemo(() => {
+    type Acc = { tipo: string; modelos: Map<string, number>; qtd: number };
+    const map = new Map<string, Acc>();
+    filtradas.forEach((d) => {
+      if (!d.tipoDefeitoId) return;
+      const tipo = lookup(tiposDefeito, d.tipoDefeitoId);
+      const modeloPrincipal = d.itens[0] ? lookup(modelos, d.itens[0].modeloId) : "—";
+      const cur = map.get(tipo) ?? { tipo, modelos: new Map(), qtd: 0 };
+      cur.qtd += 1;
+      cur.modelos.set(modeloPrincipal, (cur.modelos.get(modeloPrincipal) ?? 0) + 1);
+      map.set(tipo, cur);
+    });
     return Array.from(map.values())
+      .map((acc) => {
+        const modeloTop = Array.from(acc.modelos.entries()).sort((a, b) => b[1] - a[1])[0];
+        return {
+          tipo: acc.tipo,
+          qtd: acc.qtd,
+          modeloTop: modeloTop ? modeloTop[0] : "—",
+          modeloTopQtd: modeloTop ? modeloTop[1] : 0,
+        };
+      })
       .sort((a, b) => b.qtd - a.qtd)
       .slice(0, 8);
-  }, [filtradas, modelos, motivos, pecas]);
+  }, [filtradas, modelos, tiposDefeito]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE));
   const ordenadas = useMemo(
@@ -298,10 +329,11 @@ export default function Dashboard() {
         Empresa: lookup(empresas, d.empresaId),
         Plataforma: lookup(plataformas, d.plataformaId),
         Modelo: lookup(modelos, it.modeloId),
-        Peca: lookup(pecas, it.pecaId),
+        Componente: lookup(pecas, it.pecaId),
         Cor: it.cor,
         Tamanho: it.tamanho,
         Motivo: lookup(motivos, d.motivoId),
+        TipoDefeito: d.tipoDefeitoId ? lookup(tiposDefeito, d.tipoDefeitoId) : "",
         Quantidade: it.quantidade,
         ValorTotalItem: it.valor,
         ValorRecuperado: d.valorRecuperado ?? "",
@@ -524,7 +556,7 @@ export default function Dashboard() {
 
           <RankingCard
             title="Modelo + Tamanho"
-            subtitle="Indicador de problemas de modelagem"
+            subtitle="Indicador de problemas de modelagem (ex: 'G está pequeno')"
             icon={<Ruler className="h-3.5 w-3.5" />}
             empty="Nenhum item com tamanho informado."
             accent="warning"
@@ -532,6 +564,7 @@ export default function Dashboard() {
               key: `${r.modelo}-${r.tamanho}`,
               primary: r.modelo,
               badge: r.tamanho,
+              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
               value: r.qtd,
             }))}
           />
@@ -546,20 +579,21 @@ export default function Dashboard() {
               key: `${r.modelo}-${r.cor}`,
               primary: r.modelo,
               badge: r.cor,
+              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
               value: r.qtd,
             }))}
           />
 
           <RankingCard
-            title="Peças com defeito"
-            subtitle="Apenas devoluções com motivo de defeito"
+            title="Tipos de defeito constatados"
+            subtitle="Informados ao finalizar a devolução (Ganhei / Perdi)"
             icon={<Wrench className="h-3.5 w-3.5" />}
-            empty="Nenhuma devolução por defeito com peça informada."
+            empty="Nenhum tipo de defeito informado ainda. Marque ao resolver disputas."
             accent="destructive"
-            rows={topPecasDefeito.map((r) => ({
-              key: `${r.modelo}-${r.peca}`,
-              primary: r.modelo,
-              secondary: r.peca,
+            rows={topTiposDefeito.map((r) => ({
+              key: r.tipo,
+              primary: r.tipo,
+              secondary: `${r.modeloTop} · ${r.modeloTopQtd} ${r.modeloTopQtd === 1 ? "caso" : "casos"}`,
               value: r.qtd,
             }))}
           />

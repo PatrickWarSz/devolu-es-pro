@@ -61,7 +61,8 @@ export default function Configuracoes() {
               storeKey="modelos"
             />
             <CatalogoPanel
-              title="Peças"
+              title="Componentes do produto"
+              hint="Partes que podem voltar com problema (ex.: legging do conjunto, top, carregador, peça única)."
               items={useStore.getState().pecas}
               add={(n) => useStore.getState().addPeca(n)}
               del={(id) => useStore.getState().deletePeca(id)}
@@ -80,6 +81,14 @@ export default function Configuracoes() {
               add={(n) => useStore.getState().addTamanho(n)}
               del={(id) => useStore.getState().deleteTamanho(id)}
               storeKey="tamanhos"
+            />
+            <CatalogoPanel
+              title="Tipos de defeito"
+              hint="Constatado ao finalizar a devolução (rasgo, mancha, tela quebrada, item amassado…). Aparece só quando você marca 'Ganhei' ou 'Perdi'."
+              items={useStore.getState().tiposDefeito}
+              add={(n) => useStore.getState().addTipoDefeito(n)}
+              del={(id) => useStore.getState().deleteTipoDefeito(id)}
+              storeKey="tiposDefeito"
             />
             <MotivosPanel />
           </div>
@@ -367,12 +376,14 @@ function VinculosPanel() {
 
 function CatalogoPanel({
   title,
+  hint,
   storeKey,
   items: initialItems,
   add,
   del,
 }: {
   title: string;
+  hint?: string;
   storeKey: keyof ReturnType<typeof useStore.getState>;
   items: { id: string; nome: string }[];
   add: (n: string) => void;
@@ -387,6 +398,7 @@ function CatalogoPanel({
     <div className="rounded-lg border border-border bg-card shadow-xs">
       <div className="border-b border-border px-4 py-2.5">
         <h3 className="text-sm font-medium">{title}</h3>
+        {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </div>
       <div className="flex items-center gap-2 border-b border-border bg-surface-muted/40 p-2">
         <Input
