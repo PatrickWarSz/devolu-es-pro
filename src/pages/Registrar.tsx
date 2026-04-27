@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { ReturnStatus, DevolucaoItem, PedidoACaminho } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, AlertCircle, XCircle, Trash2, Sparkles, Plus, Package, Truck, X } from "lucide-react";
-import { fmtBRL, fmtDateTime, isToday, statusLabel, valorTotal, quantidadeTotal } from "@/lib/format";
+import { fmtBRL, fmtDateTime, isToday, statusLabel, valorTotal, quantidadeTotal, motivoGeraPerda } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -23,6 +23,7 @@ interface FormState {
   pedidoId: string;
   devolucaoId: string;
   motivoId: string;
+  tipoDefeitoId: string;
   status: ReturnStatus;
   valorPedido: number; // valor total da devolução (único, não por item)
   itens: ItemForm[];
@@ -52,6 +53,7 @@ const empty = (): FormState => ({
   pedidoId: "",
   devolucaoId: "",
   motivoId: "",
+  tipoDefeitoId: "",
   status: "resolved",
   valorPedido: 0,
   itens: [emptyItem()],
@@ -89,6 +91,7 @@ export default function Registrar() {
   const cores = useStore((s) => s.cores);
   const tamanhos = useStore((s) => s.tamanhos);
   const motivos = useStore((s) => s.motivos);
+  const tiposDefeito = useStore((s) => s.tiposDefeito);
   const devolucoes = useStore((s) => s.devolucoes);
   const addDevolucao = useStore((s) => s.addDevolucao);
   const deleteDevolucao = useStore((s) => s.deleteDevolucao);
@@ -112,6 +115,13 @@ export default function Registrar() {
       setForm((f) => ({ ...f, plataformaId: "" }));
     }
   }, [plataformasDisponiveis, form.plataformaId]);
+
+  // Limpa tipo de defeito se o motivo passar a não exigir
+  useEffect(() => {
+    if (form.tipoDefeitoId && form.motivoId && !motivoGeraPerda(motivos, form.motivoId)) {
+      setForm((f) => ({ ...f, tipoDefeitoId: "" }));
+    }
+  }, [form.motivoId, form.tipoDefeitoId, motivos]);
 
   const filaHoje = useMemo(
     () =>
@@ -145,6 +155,9 @@ export default function Registrar() {
   // Detecta se o motivo selecionado é "defeito" (case-insensitive, match parcial)
   const motivoSelecionado = motivos.find((m) => m.id === form.motivoId);
   const isDefeito = !!motivoSelecionado?.nome.toLowerCase().includes("defeito");
+  // Tipo de defeito só faz sentido quando o motivo gera perda operacional
+  // (defeito, envio errado etc.). Para arrependimento/não serviu não aparece.
+  const exigeTipoDefeito = !!form.motivoId && motivoGeraPerda(motivos, form.motivoId);
 
   const itensValidos = form.itens.filter(
     (it) => it.modeloId && Number(it.quantidade) > 0,
@@ -279,6 +292,7 @@ export default function Registrar() {
       pedidoId: form.pedidoId.trim(),
       devolucaoId: form.devolucaoId.trim(),
       motivoId: form.motivoId,
+      tipoDefeitoId: exigeTipoDefeito ? form.tipoDefeitoId || undefined : undefined,
       status: form.status,
       valorRecuperado: form.status === "resolved" ? totalCalc : undefined,
       // Valor total é único da devolução. Para preservar o modelo (valor por item),
@@ -561,6 +575,25 @@ export default function Registrar() {
                 </p>
               )}
             </Field>
+
+            {exigeTipoDefeito && (
+              <Field
+                label="Tipo de defeito constatado"
+                hint="opcional · ajuda nas análises"
+              >
+                <QuickSelect
+                  value={form.tipoDefeitoId || "__none__"}
+                  onValueChange={(v) =>
+                    set("tipoDefeitoId", v === "__none__" ? "" : v)
+                  }
+                  placeholder="Selecione o tipo de defeito"
+                  options={[
+                    { value: "__none__", label: "— Não informar —" },
+                    ...tiposDefeito.map((t) => ({ value: t.id, label: t.nome })),
+                  ]}
+                />
+              </Field>
+            )}
 
             <Field
               label="ID do Pedido"
