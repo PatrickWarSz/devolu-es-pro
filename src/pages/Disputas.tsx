@@ -111,11 +111,13 @@ export default function Disputas() {
   const abrirResolucao = (d: Devolucao, kind: ResolucaoKind) => {
     setResolucao({ devolucao: d, kind });
     setValorFinal(String(valorTotal(d)));
+    setTipoDefeitoId(d.tipoDefeitoId ?? "");
   };
 
   const fecharResolucao = () => {
     setResolucao(null);
     setValorFinal("");
+    setTipoDefeitoId("");
   };
 
   const confirmar = () => {
@@ -126,9 +128,10 @@ export default function Disputas() {
       return;
     }
     const total = valorTotal(resolucao.devolucao);
+    const tipo = exigeTipoDefeito ? tipoDefeitoId || undefined : undefined;
 
     if (resolucao.kind === "win") {
-      setStatus(resolucao.devolucao.id, "resolved", v);
+      setStatus(resolucao.devolucao.id, "resolved", v, tipo);
       toast({
         title: "Disputa ganha 🏆",
         description: `${fmtBRL(v)} recuperados${v !== total ? ` (de ${fmtBRL(total)})` : ""}.`,
@@ -136,7 +139,7 @@ export default function Disputas() {
     } else {
       // Para perda, gravamos o valor final como valorRecuperado também
       // (representa o valor "considerado" — útil quando plataforma aplica taxas).
-      setStatus(resolucao.devolucao.id, "loss", v);
+      setStatus(resolucao.devolucao.id, "loss", v, tipo);
       toast({
         title: "Perda registrada",
         description: `${fmtBRL(v)} confirmados como perda${v !== total ? ` (bruto ${fmtBRL(total)})` : ""}.`,
