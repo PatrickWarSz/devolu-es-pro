@@ -277,6 +277,13 @@ export const useStore = create<State & Actions>()(
           motivos: s.motivos.map((m) => (m.id === id ? { ...m, ...patch } : m)),
         })),
       deleteMotivo: (id) => set((s) => ({ motivos: s.motivos.filter((x) => x.id !== id) })),
+      addTipoDefeito: (nome) => {
+        const n: TipoDefeito = { id: uid("def"), nome };
+        set((s) => ({ tiposDefeito: [...s.tiposDefeito, n] }));
+        return n;
+      },
+      deleteTipoDefeito: (id) =>
+        set((s) => ({ tiposDefeito: s.tiposDefeito.filter((x) => x.id !== id) })),
 
       setTheme: (t) => set({ theme: t }),
       resetSeed: () =>
@@ -289,12 +296,13 @@ export const useStore = create<State & Actions>()(
           cores: seedCores,
           tamanhos: seedTamanhos,
           motivos: seedMotivos,
+          tiposDefeito: seedTiposDefeito,
           devolucoes: seedDevolucoes,
         }),
     }),
     {
       name: "devolucoes-pro-v1",
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         const s = persistedState as Partial<State> | undefined;
         if (!s) return s as unknown as State & Actions;
@@ -325,6 +333,10 @@ export const useStore = create<State & Actions>()(
               return { ...m, geraPerda: guess ?? true };
             }),
           };
+        }
+        if (version < 4 && !Array.isArray(next.tiposDefeito)) {
+          // Catálogo de tipos de defeito é novo — semeia com defaults.
+          next = { ...next, tiposDefeito: seedTiposDefeito };
         }
         return next as unknown as State & Actions;
       },
