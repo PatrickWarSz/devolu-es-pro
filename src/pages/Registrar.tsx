@@ -53,6 +53,7 @@ const empty = (): FormState => ({
   pedidoId: "",
   devolucaoId: "",
   motivoId: "",
+  tipoDefeitoId: "",
   status: "resolved",
   valorPedido: 0,
   itens: [emptyItem()],
