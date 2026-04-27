@@ -116,6 +116,13 @@ export default function Registrar() {
     }
   }, [plataformasDisponiveis, form.plataformaId]);
 
+  // Limpa tipo de defeito se o motivo passar a não exigir
+  useEffect(() => {
+    if (form.tipoDefeitoId && form.motivoId && !motivoGeraPerda(motivos, form.motivoId)) {
+      setForm((f) => ({ ...f, tipoDefeitoId: "" }));
+    }
+  }, [form.motivoId, form.tipoDefeitoId, motivos]);
+
   const filaHoje = useMemo(
     () =>
       devolucoes
