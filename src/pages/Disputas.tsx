@@ -54,18 +54,11 @@ export default function Disputas() {
   const modelos = useStore((s) => s.modelos);
   const pecas = useStore((s) => s.pecas);
   const motivos = useStore((s) => s.motivos);
-  const tiposDefeito = useStore((s) => s.tiposDefeito);
   const { toast } = useToast();
 
   const [resolucao, setResolucao] = useState<ResolucaoState | null>(null);
   const [valorFinal, setValorFinal] = useState("");
-  const [tipoDefeitoId, setTipoDefeitoId] = useState<string>("");
   const [excluir, setExcluir] = useState<Devolucao | null>(null);
-
-  // Tipo de defeito só faz sentido quando o motivo gera perda operacional.
-  const exigeTipoDefeito = resolucao
-    ? motivoGeraPerda(motivos, resolucao.devolucao.motivoId)
-    : false;
 
   const disputas = useMemo(
     () =>
