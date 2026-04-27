@@ -23,6 +23,7 @@ interface FormState {
   pedidoId: string;
   devolucaoId: string;
   motivoId: string;
+  tipoDefeitoId: string;
   status: ReturnStatus;
   valorPedido: number; // valor total da devolução (único, não por item)
   itens: ItemForm[];
