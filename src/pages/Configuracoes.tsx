@@ -376,12 +376,14 @@ function VinculosPanel() {
 
 function CatalogoPanel({
   title,
+  hint,
   storeKey,
   items: initialItems,
   add,
   del,
 }: {
   title: string;
+  hint?: string;
   storeKey: keyof ReturnType<typeof useStore.getState>;
   items: { id: string; nome: string }[];
   add: (n: string) => void;
@@ -396,6 +398,7 @@ function CatalogoPanel({
     <div className="rounded-lg border border-border bg-card shadow-xs">
       <div className="border-b border-border px-4 py-2.5">
         <h3 className="text-sm font-medium">{title}</h3>
+        {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </div>
       <div className="flex items-center gap-2 border-b border-border bg-surface-muted/40 p-2">
         <Input
