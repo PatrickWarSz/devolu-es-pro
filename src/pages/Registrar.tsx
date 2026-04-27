@@ -834,7 +834,7 @@ function ItemRow({
         </div>
         {showPeca && (
           <div className="md:col-span-3">
-            <Field label="Peça com defeito" compact hint="motivo = defeito">
+            <Field label="Componente afetado" compact hint="parte que veio com problema">
               <QuickSelect
                 value={item.pecaId}
                 onValueChange={(v) => onChange({ pecaId: v })}
