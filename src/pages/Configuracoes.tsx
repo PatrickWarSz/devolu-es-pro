@@ -61,7 +61,8 @@ export default function Configuracoes() {
               storeKey="modelos"
             />
             <CatalogoPanel
-              title="Peças"
+              title="Componentes do produto"
+              hint="Partes que podem voltar com problema (ex.: legging do conjunto, top, carregador, peça única)."
               items={useStore.getState().pecas}
               add={(n) => useStore.getState().addPeca(n)}
               del={(id) => useStore.getState().deletePeca(id)}
@@ -80,6 +81,14 @@ export default function Configuracoes() {
               add={(n) => useStore.getState().addTamanho(n)}
               del={(id) => useStore.getState().deleteTamanho(id)}
               storeKey="tamanhos"
+            />
+            <CatalogoPanel
+              title="Tipos de defeito"
+              hint="Constatado ao finalizar a devolução (rasgo, mancha, tela quebrada, item amassado…). Aparece só quando você marca 'Ganhei' ou 'Perdi'."
+              items={useStore.getState().tiposDefeito}
+              add={(n) => useStore.getState().addTipoDefeito(n)}
+              del={(id) => useStore.getState().deleteTipoDefeito(id)}
+              storeKey="tiposDefeito"
             />
             <MotivosPanel />
           </div>
