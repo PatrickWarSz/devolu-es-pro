@@ -91,6 +91,7 @@ export default function Registrar() {
   const cores = useStore((s) => s.cores);
   const tamanhos = useStore((s) => s.tamanhos);
   const motivos = useStore((s) => s.motivos);
+  const tiposDefeito = useStore((s) => s.tiposDefeito);
   const devolucoes = useStore((s) => s.devolucoes);
   const addDevolucao = useStore((s) => s.addDevolucao);
   const deleteDevolucao = useStore((s) => s.deleteDevolucao);
