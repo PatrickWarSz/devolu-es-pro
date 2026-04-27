@@ -9,6 +9,7 @@ import type {
   Peca,
   Plataforma,
   Tamanho,
+  TipoDefeito,
 } from "./types";
 
 const id = (p: string, n: number) => `${p}-${String(n).padStart(3, "0")}`;
@@ -44,13 +45,30 @@ export const seedModelos: Modelo[] = [
   { id: id("mod", 4), nome: "Conjunto Fitness" },
 ];
 
+// "Peças" agora representa COMPONENTES do produto (parte que veio com problema
+// ou que compõe o pedido). Ex.: legging do conjunto, top do conjunto, carregador.
+// Mantemos a chave `seedPecas` por compatibilidade com store/persist.
 export const seedPecas: Peca[] = [
   { id: id("pec", 1), nome: "Peça única" },
-  { id: id("pec", 2), nome: "Tecido" },
-  { id: id("pec", 3), nome: "Costura" },
-  { id: id("pec", 4), nome: "Estampa" },
-  { id: id("pec", 5), nome: "Elástico" },
+  { id: id("pec", 2), nome: "Legging (do conjunto)" },
+  { id: id("pec", 3), nome: "Top / Cropped (do conjunto)" },
+  { id: id("pec", 4), nome: "Short (do conjunto)" },
+  { id: id("pec", 5), nome: "Acessório / Brinde" },
   { id: id("pec", 6), nome: "Kit completo" },
+];
+
+// Tipos de defeito constatado — usado só na finalização de devoluções com perda.
+export const seedTiposDefeito: TipoDefeito[] = [
+  { id: id("def", 1), nome: "Rasgo na costura" },
+  { id: id("def", 2), nome: "Buraco no tecido" },
+  { id: id("def", 3), nome: "Mancha" },
+  { id: id("def", 4), nome: "Desbotado / cor diferente" },
+  { id: id("def", 5), nome: "Tecido transparente" },
+  { id: id("def", 6), nome: "Elástico estourado" },
+  { id: id("def", 7), nome: "Costura solta" },
+  { id: id("def", 8), nome: "Tamanho fora do esperado" },
+  { id: id("def", 9), nome: "Item amassado / danificado no transporte" },
+  { id: id("def", 10), nome: "Item faltando no kit" },
 ];
 
 export const seedCores: Cor[] = [
