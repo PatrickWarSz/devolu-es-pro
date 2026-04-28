@@ -253,8 +253,8 @@ export default function Dashboard() {
         componentes: toBreakdown(acc.componentes),
       }))
       .sort((a, b) => b.qtdTotal - a.qtdTotal)
-      .slice(0, 10);
-  }, [filtradas, modelos, motivos, tiposDefeito, pecas]);
+      .slice(0, topN);
+  }, [filtradas, modelos, motivos, tiposDefeito, pecas, topN]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE));
   const ordenadas = useMemo(
