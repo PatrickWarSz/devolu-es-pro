@@ -88,6 +88,7 @@ export default function Dashboard() {
   const [fCompetencia, setFCompetencia] = useState(ALL);
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [topN, setTopN] = useState(10);
   const [excluir, setExcluir] = useState<Devolucao | null>(null);
   const PAGE = 12;
 
