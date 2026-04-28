@@ -608,11 +608,22 @@ export default function Registrar() {
               hint={pedidoObrigatorio ? "Necessário para rastrear disputa/perda" : "Opcional"}
             >
               <Input
-                placeholder="Ex: SHP-991023"
+                placeholder={pedidoObrigatorio ? "Obrigatório — ex: SHP-991023" : "Ex: SHP-991023"}
                 value={form.pedidoId}
                 onChange={(e) => set("pedidoId", e.target.value)}
-                className="font-mono text-sm"
+                className={cn(
+                  "font-mono text-sm",
+                  pedidoFaltando && "border-destructive/60 focus-visible:ring-destructive/40",
+                )}
+                aria-invalid={pedidoFaltando}
               />
+              {pedidoFaltando && (
+                <p className="text-[11px] text-destructive mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  Informe o ID do pedido para registrar uma devolução em{" "}
+                  {form.status === "dispute" ? "disputa" : "perda"}.
+                </p>
+              )}
             </Field>
 
             <Field label="ID da Devolução" hint="Opcional">
