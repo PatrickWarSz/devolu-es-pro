@@ -193,18 +193,6 @@ export default function Dashboard() {
   // (motivos, tamanhos, cores, defeitos). Funciona para qualquer nicho —
   // não pressupõe roupa, eletrônico ou nada específico.
 
-  type Breakdown = { label: string; qtd: number };
-  type ProdutoAnalise = {
-    modelo: string;
-    qtdTotal: number;
-    devolucoesCount: number;
-    motivos: Breakdown[];
-    tamanhos: Breakdown[];
-    cores: Breakdown[];
-    defeitos: Breakdown[];
-    componentes: Breakdown[];
-  };
-
   const produtosAnalise = useMemo<ProdutoAnalise[]>(() => {
     type Acc = {
       modelo: string;
