@@ -488,7 +488,18 @@ export default function Dashboard() {
             {fPlataforma !== ALL && <FilterChip label="Plataforma" value={lookup(plataformas, fPlataforma)} />}
             {fStatus !== ALL && <FilterChip label="Status" value={statusLabel[fStatus as keyof typeof statusLabel] ?? fStatus} />}
             {fMotivo !== ALL && <FilterChip label="Motivo" value={lookup(motivos, fMotivo)} />}
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Top 10</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Top</span>
+            <Select value={String(topN)} onValueChange={(v) => setTopN(Number(v))}>
+              <SelectTrigger className="h-7 w-[64px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
