@@ -163,14 +163,21 @@ export default function Registrar() {
     (it) => it.modeloId && Number(it.quantidade) > 0,
   );
 
-  const valid =
-    form.empresaId &&
-    form.plataformaId &&
-    form.motivoId &&
-    Number(form.valorPedido) >= 0 &&
-    (!pedidoObrigatorio || form.pedidoId.trim().length > 0) &&
-    itensValidos.length === form.itens.length &&
-    form.itens.length > 0;
+  // Lista legível de campos faltando — usada para tooltip nos botões e toast.
+  // Mantemos os botões clicáveis para que o usuário entenda o motivo (em vez
+  // de ficar travado sem feedback algum).
+  const pedidoFaltando = pedidoObrigatorio && form.pedidoId.trim().length === 0;
+  const camposFaltando: string[] = [];
+  if (!form.empresaId) camposFaltando.push("Empresa");
+  if (!form.plataformaId) camposFaltando.push("Plataforma");
+  if (!form.motivoId) camposFaltando.push("Motivo");
+  if (pedidoFaltando) camposFaltando.push("ID do Pedido (obrigatório em disputa/perda)");
+  if (form.itens.length === 0 || itensValidos.length !== form.itens.length) {
+    camposFaltando.push("Modelo e quantidade em todos os itens");
+  }
+  if (Number(form.valorPedido) < 0) camposFaltando.push("Valor da devolução válido");
+
+  const valid = camposFaltando.length === 0;
 
   const totalCalc = Number(form.valorPedido || 0);
 
