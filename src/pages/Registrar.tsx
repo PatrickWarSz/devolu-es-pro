@@ -268,10 +268,8 @@ export default function Registrar() {
     e?.preventDefault();
     if (!valid) {
       toast({
-        title: "Preencha os campos obrigatórios",
-        description: pedidoObrigatorio
-          ? "Empresa, plataforma, motivo, ID do pedido (obrigatório em disputa/perda) e ao menos 1 item com modelo, qtd e valor."
-          : "Empresa, plataforma, motivo e ao menos 1 item com modelo, qtd e valor.",
+        title: "Faltam campos para registrar",
+        description: camposFaltando.join(" · "),
         variant: "destructive",
       });
       return;
