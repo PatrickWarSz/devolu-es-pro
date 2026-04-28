@@ -473,15 +473,22 @@ export default function Dashboard() {
 
       {/* ============== Análise de Produto ============== */}
       <section className="space-y-3">
-        <div className="flex items-baseline justify-between gap-3">
-          <div>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold tracking-tight">Produtos que mais voltam</h2>
             <p className="text-xs text-muted-foreground">
               Ranking dos modelos com mais devoluções no recorte atual. Clique em cada linha para
               ver <span className="font-medium">por que</span> está voltando — motivos, tamanhos, cores e defeitos.
             </p>
           </div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Top 10</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <FilterChip label="Competência" value={fCompetencia === ALL ? "Todas" : fCompetencia.split("-").reverse().join("/")} />
+            {fEmpresa !== ALL && <FilterChip label="Empresa" value={lookup(empresas, fEmpresa)} />}
+            {fPlataforma !== ALL && <FilterChip label="Plataforma" value={lookup(plataformas, fPlataforma)} />}
+            {fStatus !== ALL && <FilterChip label="Status" value={statusLabel[fStatus as keyof typeof statusLabel] ?? fStatus} />}
+            {fMotivo !== ALL && <FilterChip label="Motivo" value={lookup(motivos, fMotivo)} />}
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Top 10</span>
+          </div>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
