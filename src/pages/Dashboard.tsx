@@ -487,73 +487,32 @@ export default function Dashboard() {
       <section className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold tracking-tight">Análise de produto</h2>
+            <h2 className="text-sm font-semibold tracking-tight">Produtos que mais voltam</h2>
             <p className="text-xs text-muted-foreground">
-              Cruzamentos para entender por que cada produto está voltando — modelagem, cor, peça defeituosa.
+              Ranking dos modelos com mais devoluções no recorte atual. Clique em cada linha para
+              ver <span className="font-medium">por que</span> está voltando — motivos, tamanhos, cores e defeitos.
             </p>
           </div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Top 8 de cada
-          </span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Top 10</span>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <RankingCard
-            title="Modelos mais devolvidos"
-            subtitle="Ranking geral por modelo, com o motivo que mais aparece em cada um"
-            icon={<Package className="h-3.5 w-3.5" />}
-            empty="Sem devoluções no recorte atual."
-            rows={topModelos.map((r) => ({
-              key: r.modelo,
-              primary: r.modelo,
-              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
-              value: r.qtd,
-            }))}
-          />
-
-          <RankingCard
-            title="Tipos de defeito mais frequentes"
-            subtitle="Informados no registro ou ao concluir a devolução"
-            icon={<Wrench className="h-3.5 w-3.5" />}
-            empty="Nenhum tipo de defeito informado ainda."
-            accent="destructive"
-            rows={topTiposDefeito.map((r) => ({
-              key: r.tipo,
-              primary: r.tipo,
-              secondary: `Mais comum em: ${r.modeloTop}`,
-              value: r.qtd,
-            }))}
-          />
-
-          <RankingCard
-            title="Tamanhos problemáticos"
-            subtitle="Combinações modelo + tamanho — sinal de modelagem (ex: 'G pequeno')"
-            icon={<Ruler className="h-3.5 w-3.5" />}
-            empty="Nenhum item com tamanho informado."
-            accent="warning"
-            rows={topModeloTamanho.map((r) => ({
-              key: `${r.modelo}-${r.tamanho}`,
-              primary: `${r.modelo}`,
-              badge: r.tamanho,
-              secondary: r.motivoTop,
-              value: r.qtd,
-            }))}
-          />
-
-          <RankingCard
-            title="Cores problemáticas"
-            subtitle="Combinações modelo + cor — sinal de problema específico (ex: transparência)"
-            icon={<Palette className="h-3.5 w-3.5" />}
-            empty="Nenhum item com cor informada."
-            accent="info"
-            rows={topModeloCor.map((r) => ({
-              key: `${r.modelo}-${r.cor}`,
-              primary: `${r.modelo}`,
-              badge: r.cor,
-              secondary: r.motivoTop,
-              value: r.qtd,
-            }))}
-          />
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
+          {produtosAnalise.length === 0 ? (
+            <p className="py-8 text-center text-xs text-muted-foreground">
+              Sem devoluções no recorte atual.
+            </p>
+          ) : (
+            <ol className="space-y-1">
+              {produtosAnalise.map((p, i) => (
+                <ProdutoAnaliseRow
+                  key={p.modelo}
+                  rank={i + 1}
+                  produto={p}
+                  maxQtd={produtosAnalise[0]?.qtdTotal ?? 1}
+                />
+              ))}
+            </ol>
+          )}
         </div>
       </section>
 
