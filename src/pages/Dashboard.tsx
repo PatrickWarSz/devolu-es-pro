@@ -543,7 +543,7 @@ export default function Dashboard() {
         <div className="grid gap-4 lg:grid-cols-2">
           <RankingCard
             title="Modelos mais devolvidos"
-            subtitle="Com o motivo predominante de cada um"
+            subtitle="Ranking geral por modelo, com o motivo que mais aparece em cada um"
             icon={<Package className="h-3.5 w-3.5" />}
             empty="Sem devoluções no recorte atual."
             rows={topModelos.map((r) => ({
@@ -555,45 +555,45 @@ export default function Dashboard() {
           />
 
           <RankingCard
-            title="Modelo + Tamanho"
-            subtitle="Indicador de problemas de modelagem (ex: 'G está pequeno')"
+            title="Tipos de defeito mais frequentes"
+            subtitle="Informados no registro ou ao concluir a devolução"
+            icon={<Wrench className="h-3.5 w-3.5" />}
+            empty="Nenhum tipo de defeito informado ainda."
+            accent="destructive"
+            rows={topTiposDefeito.map((r) => ({
+              key: r.tipo,
+              primary: r.tipo,
+              secondary: `Mais comum em: ${r.modeloTop}`,
+              value: r.qtd,
+            }))}
+          />
+
+          <RankingCard
+            title="Tamanhos problemáticos"
+            subtitle="Combinações modelo + tamanho — sinal de modelagem (ex: 'G pequeno')"
             icon={<Ruler className="h-3.5 w-3.5" />}
             empty="Nenhum item com tamanho informado."
             accent="warning"
             rows={topModeloTamanho.map((r) => ({
               key: `${r.modelo}-${r.tamanho}`,
-              primary: r.modelo,
+              primary: `${r.modelo}`,
               badge: r.tamanho,
-              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
+              secondary: r.motivoTop,
               value: r.qtd,
             }))}
           />
 
           <RankingCard
-            title="Modelo + Cor"
-            subtitle="Para detectar problemas específicos por cor (ex: transparência)"
+            title="Cores problemáticas"
+            subtitle="Combinações modelo + cor — sinal de problema específico (ex: transparência)"
             icon={<Palette className="h-3.5 w-3.5" />}
             empty="Nenhum item com cor informada."
             accent="info"
             rows={topModeloCor.map((r) => ({
               key: `${r.modelo}-${r.cor}`,
-              primary: r.modelo,
+              primary: `${r.modelo}`,
               badge: r.cor,
-              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
-              value: r.qtd,
-            }))}
-          />
-
-          <RankingCard
-            title="Tipos de defeito constatados"
-            subtitle="Informados ao finalizar a devolução (Ganhei / Perdi)"
-            icon={<Wrench className="h-3.5 w-3.5" />}
-            empty="Nenhum tipo de defeito informado ainda. Marque ao resolver disputas."
-            accent="destructive"
-            rows={topTiposDefeito.map((r) => ({
-              key: r.tipo,
-              primary: r.tipo,
-              secondary: `${r.modeloTop} · ${r.modeloTopQtd} ${r.modeloTopQtd === 1 ? "caso" : "casos"}`,
+              secondary: r.motivoTop,
               value: r.qtd,
             }))}
           />
