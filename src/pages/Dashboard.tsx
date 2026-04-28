@@ -189,127 +189,83 @@ export default function Dashboard() {
   }, [filtradas, motivos]);
 
   // ============== Análise de Produto ==============
-  // Cruzamentos para entender PORQUÊ um produto está sendo devolvido:
-  // - tamanho (ex: "G está pequeno"), cor (ex: "branco transparente"),
-  // - peça com defeito (quando motivo = defeito).
+  // Um único ranking: produtos que mais voltam, com drill-down do PORQUÊ
+  // (motivos, tamanhos, cores, defeitos). Funciona para qualquer nicho —
+  // não pressupõe roupa, eletrônico ou nada específico.
 
-  /** Top modelos devolvidos com breakdown do motivo principal. */
-  const topModelos = useMemo(() => {
-    type Acc = { qtd: number; motivos: Map<string, number> };
+  type Breakdown = { label: string; qtd: number };
+  type ProdutoAnalise = {
+    modelo: string;
+    qtdTotal: number;
+    devolucoesCount: number;
+    motivos: Breakdown[];
+    tamanhos: Breakdown[];
+    cores: Breakdown[];
+    defeitos: Breakdown[];
+    componentes: Breakdown[];
+  };
+
+  const produtosAnalise = useMemo<ProdutoAnalise[]>(() => {
+    type Acc = {
+      modelo: string;
+      qtdTotal: number;
+      devolucoes: Set<string>;
+      motivos: Map<string, number>;
+      tamanhos: Map<string, number>;
+      cores: Map<string, number>;
+      defeitos: Map<string, number>;
+      componentes: Map<string, number>;
+    };
     const map = new Map<string, Acc>();
+    const bump = (m: Map<string, number>, k: string, n: number) => {
+      if (!k || k === "—") return;
+      m.set(k, (m.get(k) ?? 0) + n);
+    };
     filtradas.forEach((d) => {
       const motivoNome = lookup(motivos, d.motivoId);
+      const defeitoNome = d.tipoDefeitoId ? lookup(tiposDefeito, d.tipoDefeitoId) : "";
       d.itens.forEach((it) => {
-        const k = lookup(modelos, it.modeloId);
-        const cur = map.get(k) ?? { qtd: 0, motivos: new Map() };
-        cur.qtd += it.quantidade;
-        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
-        map.set(k, cur);
+        const modelo = lookup(modelos, it.modeloId);
+        const cur =
+          map.get(modelo) ??
+          ({
+            modelo,
+            qtdTotal: 0,
+            devolucoes: new Set<string>(),
+            motivos: new Map(),
+            tamanhos: new Map(),
+            cores: new Map(),
+            defeitos: new Map(),
+            componentes: new Map(),
+          } as Acc);
+        cur.qtdTotal += it.quantidade;
+        cur.devolucoes.add(d.id);
+        bump(cur.motivos, motivoNome, it.quantidade);
+        bump(cur.tamanhos, it.tamanho, it.quantidade);
+        bump(cur.cores, it.cor, it.quantidade);
+        bump(cur.componentes, lookup(pecas, it.pecaId), it.quantidade);
+        if (defeitoNome) bump(cur.defeitos, defeitoNome, it.quantidade);
+        map.set(modelo, cur);
       });
     });
-    return Array.from(map.entries())
-      .map(([modelo, acc]) => {
-        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          modelo,
-          qtd: acc.qtd,
-          motivoTop: motivoTop ? motivoTop[0] : "—",
-          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, motivos]);
-
-  /** Combinação modelo + tamanho — revela problemas de modelagem (ex: "G pequeno"). */
-  const topModeloTamanho = useMemo(() => {
-    type Acc = { modelo: string; tamanho: string; qtd: number; motivos: Map<string, number> };
-    const map = new Map<string, Acc>();
-    filtradas.forEach((d) => {
-      const motivoNome = lookup(motivos, d.motivoId);
-      d.itens.forEach((it) => {
-        const tam = it.tamanho || "—";
-        const mod = lookup(modelos, it.modeloId);
-        const k = `${mod}__${tam}`;
-        const cur = map.get(k) ?? { modelo: mod, tamanho: tam, qtd: 0, motivos: new Map() };
-        cur.qtd += it.quantidade;
-        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
-        map.set(k, cur);
-      });
-    });
+    const toBreakdown = (m: Map<string, number>): Breakdown[] =>
+      Array.from(m.entries())
+        .map(([label, qtd]) => ({ label, qtd }))
+        .sort((a, b) => b.qtd - a.qtd);
     return Array.from(map.values())
-      .map((acc) => {
-        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          modelo: acc.modelo,
-          tamanho: acc.tamanho,
-          qtd: acc.qtd,
-          motivoTop: motivoTop ? motivoTop[0] : "—",
-          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, motivos]);
-
-  /** Combinação modelo + cor — revela problemas específicos de cor (ex: branco transparente). */
-  const topModeloCor = useMemo(() => {
-    type Acc = { modelo: string; cor: string; qtd: number; motivos: Map<string, number> };
-    const map = new Map<string, Acc>();
-    filtradas.forEach((d) => {
-      const motivoNome = lookup(motivos, d.motivoId);
-      d.itens.forEach((it) => {
-        const cor = it.cor || "—";
-        const mod = lookup(modelos, it.modeloId);
-        const k = `${mod}__${cor}`;
-        const cur = map.get(k) ?? { modelo: mod, cor, qtd: 0, motivos: new Map() };
-        cur.qtd += it.quantidade;
-        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
-        map.set(k, cur);
-      });
-    });
-    return Array.from(map.values())
-      .map((acc) => {
-        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          modelo: acc.modelo,
-          cor: acc.cor,
-          qtd: acc.qtd,
-          motivoTop: motivoTop ? motivoTop[0] : "—",
-          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, motivos]);
-
-  /** Tipos de defeito mais constatados — só conta devoluções com tipo informado.
-   *  Cruza com o modelo principal para ajudar a identificar padrões. */
-  const topTiposDefeito = useMemo(() => {
-    type Acc = { tipo: string; modelos: Map<string, number>; qtd: number };
-    const map = new Map<string, Acc>();
-    filtradas.forEach((d) => {
-      if (!d.tipoDefeitoId) return;
-      const tipo = lookup(tiposDefeito, d.tipoDefeitoId);
-      const modeloPrincipal = d.itens[0] ? lookup(modelos, d.itens[0].modeloId) : "—";
-      const cur = map.get(tipo) ?? { tipo, modelos: new Map(), qtd: 0 };
-      cur.qtd += 1;
-      cur.modelos.set(modeloPrincipal, (cur.modelos.get(modeloPrincipal) ?? 0) + 1);
-      map.set(tipo, cur);
-    });
-    return Array.from(map.values())
-      .map((acc) => {
-        const modeloTop = Array.from(acc.modelos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          tipo: acc.tipo,
-          qtd: acc.qtd,
-          modeloTop: modeloTop ? modeloTop[0] : "—",
-          modeloTopQtd: modeloTop ? modeloTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, tiposDefeito]);
+      .map((acc) => ({
+        modelo: acc.modelo,
+        qtdTotal: acc.qtdTotal,
+        devolucoesCount: acc.devolucoes.size,
+        motivos: toBreakdown(acc.motivos),
+        tamanhos: toBreakdown(acc.tamanhos),
+        cores: toBreakdown(acc.cores),
+        defeitos: toBreakdown(acc.defeitos),
+        componentes: toBreakdown(acc.componentes),
+      }))
+      .sort((a, b) => b.qtdTotal - a.qtdTotal)
+      .slice(0, 10);
+  }, [filtradas, modelos, motivos, tiposDefeito, pecas]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE));
   const ordenadas = useMemo(
