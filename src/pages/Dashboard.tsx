@@ -812,3 +812,134 @@ function RankingCard({
     </div>
   );
 }
+
+// ====== Análise de produto: linha expansível ======
+type Breakdown = { label: string; qtd: number };
+type ProdutoAnalise = {
+  modelo: string;
+  qtdTotal: number;
+  devolucoesCount: number;
+  motivos: Breakdown[];
+  tamanhos: Breakdown[];
+  cores: Breakdown[];
+  defeitos: Breakdown[];
+  componentes: Breakdown[];
+};
+
+function ProdutoAnaliseRow({
+  rank,
+  produto,
+  maxQtd,
+}: {
+  rank: number;
+  produto: ProdutoAnalise;
+  maxQtd: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const pct = maxQtd > 0 ? (produto.qtdTotal / maxQtd) * 100 : 0;
+
+  // Insight automático: o que mais explica as devoluções deste produto?
+  const insight = (() => {
+    const top = produto.motivos[0];
+    if (!top) return null;
+    const share = top.qtd / produto.qtdTotal;
+    const parts: string[] = [`${top.label} (${Math.round(share * 100)}%)`];
+    // Concentração de tamanho ou cor revela problema específico
+    const tamTop = produto.tamanhos[0];
+    if (tamTop && tamTop.qtd / produto.qtdTotal >= 0.5 && produto.tamanhos.length > 1) {
+      parts.push(`concentrado no tamanho ${tamTop.label}`);
+    }
+    const corTop = produto.cores[0];
+    if (corTop && corTop.qtd / produto.qtdTotal >= 0.5 && produto.cores.length > 1) {
+      parts.push(`concentrado na cor ${corTop.label}`);
+    }
+    const defTop = produto.defeitos[0];
+    if (defTop) parts.push(`defeito recorrente: ${defTop.label}`);
+    return parts.join(" · ");
+  })();
+
+  return (
+    <li>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="group relative flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-surface-muted/50 transition-colors">
+          <div
+            className="absolute inset-y-0 left-0 rounded-md bg-primary/15"
+            style={{ width: `${pct}%` }}
+            aria-hidden
+          />
+          <span className="relative w-6 shrink-0 text-[10px] font-mono text-muted-foreground tabular">
+            {String(rank).padStart(2, "0")}
+          </span>
+          <Package className="relative h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <div className="relative min-w-0 flex-1">
+            <div className="truncate text-sm font-medium">{produto.modelo}</div>
+            {insight && (
+              <p className="truncate text-[11px] text-muted-foreground">{insight}</p>
+            )}
+          </div>
+          <div className="relative flex items-baseline gap-1 shrink-0">
+            <span className="text-sm font-semibold tabular">{produto.qtdTotal}</span>
+            <span className="text-[10px] text-muted-foreground">un</span>
+            <span className="ml-2 text-[10px] text-muted-foreground tabular">
+              {produto.devolucoesCount} dev.
+            </span>
+          </div>
+          <ChevronDown
+            className={
+              "relative h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform " +
+              (open ? "rotate-180" : "")
+            }
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="grid gap-3 px-2 py-3 sm:grid-cols-2 lg:grid-cols-4 border-t border-dashed border-border mt-1">
+            <BreakdownList title="Motivos" rows={produto.motivos} />
+            <BreakdownList title="Tamanhos" rows={produto.tamanhos} empty="Sem tamanho informado" />
+            <BreakdownList title="Cores" rows={produto.cores} empty="Sem cor informada" />
+            <BreakdownList
+              title="Defeitos constatados"
+              rows={produto.defeitos}
+              empty="Nenhum defeito informado"
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </li>
+  );
+}
+
+function BreakdownList({
+  title,
+  rows,
+  empty = "—",
+}: {
+  title: string;
+  rows: Breakdown[];
+  empty?: string;
+}) {
+  const total = rows.reduce((s, r) => s + r.qtd, 0);
+  return (
+    <div>
+      <h4 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </h4>
+      {rows.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground italic">{empty}</p>
+      ) : (
+        <ul className="space-y-0.5">
+          {rows.slice(0, 5).map((r) => {
+            const pct = total > 0 ? Math.round((r.qtd / total) * 100) : 0;
+            return (
+              <li key={r.label} className="flex items-center justify-between gap-2 text-xs">
+                <span className="truncate">{r.label}</span>
+                <span className="shrink-0 tabular text-muted-foreground">
+                  {r.qtd} <span className="text-[10px]">({pct}%)</span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
