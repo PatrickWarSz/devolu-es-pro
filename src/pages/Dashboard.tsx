@@ -41,7 +41,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, TrendingDown, Activity, Percent, Package, Ruler, Palette, Wrench, Trash2 } from "lucide-react";
+import { Download, TrendingDown, Activity, Percent, Package, Trash2, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import type { Devolucao } from "@/lib/types";
 import {
@@ -188,127 +189,71 @@ export default function Dashboard() {
   }, [filtradas, motivos]);
 
   // ============== Análise de Produto ==============
-  // Cruzamentos para entender PORQUÊ um produto está sendo devolvido:
-  // - tamanho (ex: "G está pequeno"), cor (ex: "branco transparente"),
-  // - peça com defeito (quando motivo = defeito).
+  // Um único ranking: produtos que mais voltam, com drill-down do PORQUÊ
+  // (motivos, tamanhos, cores, defeitos). Funciona para qualquer nicho —
+  // não pressupõe roupa, eletrônico ou nada específico.
 
-  /** Top modelos devolvidos com breakdown do motivo principal. */
-  const topModelos = useMemo(() => {
-    type Acc = { qtd: number; motivos: Map<string, number> };
+  const produtosAnalise = useMemo<ProdutoAnalise[]>(() => {
+    type Acc = {
+      modelo: string;
+      qtdTotal: number;
+      devolucoes: Set<string>;
+      motivos: Map<string, number>;
+      tamanhos: Map<string, number>;
+      cores: Map<string, number>;
+      defeitos: Map<string, number>;
+      componentes: Map<string, number>;
+    };
     const map = new Map<string, Acc>();
+    const bump = (m: Map<string, number>, k: string, n: number) => {
+      if (!k || k === "—") return;
+      m.set(k, (m.get(k) ?? 0) + n);
+    };
     filtradas.forEach((d) => {
       const motivoNome = lookup(motivos, d.motivoId);
+      const defeitoNome = d.tipoDefeitoId ? lookup(tiposDefeito, d.tipoDefeitoId) : "";
       d.itens.forEach((it) => {
-        const k = lookup(modelos, it.modeloId);
-        const cur = map.get(k) ?? { qtd: 0, motivos: new Map() };
-        cur.qtd += it.quantidade;
-        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
-        map.set(k, cur);
+        const modelo = lookup(modelos, it.modeloId);
+        const cur =
+          map.get(modelo) ??
+          ({
+            modelo,
+            qtdTotal: 0,
+            devolucoes: new Set<string>(),
+            motivos: new Map(),
+            tamanhos: new Map(),
+            cores: new Map(),
+            defeitos: new Map(),
+            componentes: new Map(),
+          } as Acc);
+        cur.qtdTotal += it.quantidade;
+        cur.devolucoes.add(d.id);
+        bump(cur.motivos, motivoNome, it.quantidade);
+        bump(cur.tamanhos, it.tamanho, it.quantidade);
+        bump(cur.cores, it.cor, it.quantidade);
+        bump(cur.componentes, lookup(pecas, it.pecaId), it.quantidade);
+        if (defeitoNome) bump(cur.defeitos, defeitoNome, it.quantidade);
+        map.set(modelo, cur);
       });
     });
-    return Array.from(map.entries())
-      .map(([modelo, acc]) => {
-        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          modelo,
-          qtd: acc.qtd,
-          motivoTop: motivoTop ? motivoTop[0] : "—",
-          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, motivos]);
-
-  /** Combinação modelo + tamanho — revela problemas de modelagem (ex: "G pequeno"). */
-  const topModeloTamanho = useMemo(() => {
-    type Acc = { modelo: string; tamanho: string; qtd: number; motivos: Map<string, number> };
-    const map = new Map<string, Acc>();
-    filtradas.forEach((d) => {
-      const motivoNome = lookup(motivos, d.motivoId);
-      d.itens.forEach((it) => {
-        const tam = it.tamanho || "—";
-        const mod = lookup(modelos, it.modeloId);
-        const k = `${mod}__${tam}`;
-        const cur = map.get(k) ?? { modelo: mod, tamanho: tam, qtd: 0, motivos: new Map() };
-        cur.qtd += it.quantidade;
-        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
-        map.set(k, cur);
-      });
-    });
+    const toBreakdown = (m: Map<string, number>): Breakdown[] =>
+      Array.from(m.entries())
+        .map(([label, qtd]) => ({ label, qtd }))
+        .sort((a, b) => b.qtd - a.qtd);
     return Array.from(map.values())
-      .map((acc) => {
-        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          modelo: acc.modelo,
-          tamanho: acc.tamanho,
-          qtd: acc.qtd,
-          motivoTop: motivoTop ? motivoTop[0] : "—",
-          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, motivos]);
-
-  /** Combinação modelo + cor — revela problemas específicos de cor (ex: branco transparente). */
-  const topModeloCor = useMemo(() => {
-    type Acc = { modelo: string; cor: string; qtd: number; motivos: Map<string, number> };
-    const map = new Map<string, Acc>();
-    filtradas.forEach((d) => {
-      const motivoNome = lookup(motivos, d.motivoId);
-      d.itens.forEach((it) => {
-        const cor = it.cor || "—";
-        const mod = lookup(modelos, it.modeloId);
-        const k = `${mod}__${cor}`;
-        const cur = map.get(k) ?? { modelo: mod, cor, qtd: 0, motivos: new Map() };
-        cur.qtd += it.quantidade;
-        cur.motivos.set(motivoNome, (cur.motivos.get(motivoNome) ?? 0) + it.quantidade);
-        map.set(k, cur);
-      });
-    });
-    return Array.from(map.values())
-      .map((acc) => {
-        const motivoTop = Array.from(acc.motivos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          modelo: acc.modelo,
-          cor: acc.cor,
-          qtd: acc.qtd,
-          motivoTop: motivoTop ? motivoTop[0] : "—",
-          motivoTopQtd: motivoTop ? motivoTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, motivos]);
-
-  /** Tipos de defeito mais constatados — só conta devoluções com tipo informado.
-   *  Cruza com o modelo principal para ajudar a identificar padrões. */
-  const topTiposDefeito = useMemo(() => {
-    type Acc = { tipo: string; modelos: Map<string, number>; qtd: number };
-    const map = new Map<string, Acc>();
-    filtradas.forEach((d) => {
-      if (!d.tipoDefeitoId) return;
-      const tipo = lookup(tiposDefeito, d.tipoDefeitoId);
-      const modeloPrincipal = d.itens[0] ? lookup(modelos, d.itens[0].modeloId) : "—";
-      const cur = map.get(tipo) ?? { tipo, modelos: new Map(), qtd: 0 };
-      cur.qtd += 1;
-      cur.modelos.set(modeloPrincipal, (cur.modelos.get(modeloPrincipal) ?? 0) + 1);
-      map.set(tipo, cur);
-    });
-    return Array.from(map.values())
-      .map((acc) => {
-        const modeloTop = Array.from(acc.modelos.entries()).sort((a, b) => b[1] - a[1])[0];
-        return {
-          tipo: acc.tipo,
-          qtd: acc.qtd,
-          modeloTop: modeloTop ? modeloTop[0] : "—",
-          modeloTopQtd: modeloTop ? modeloTop[1] : 0,
-        };
-      })
-      .sort((a, b) => b.qtd - a.qtd)
-      .slice(0, 8);
-  }, [filtradas, modelos, tiposDefeito]);
+      .map((acc) => ({
+        modelo: acc.modelo,
+        qtdTotal: acc.qtdTotal,
+        devolucoesCount: acc.devolucoes.size,
+        motivos: toBreakdown(acc.motivos),
+        tamanhos: toBreakdown(acc.tamanhos),
+        cores: toBreakdown(acc.cores),
+        defeitos: toBreakdown(acc.defeitos),
+        componentes: toBreakdown(acc.componentes),
+      }))
+      .sort((a, b) => b.qtdTotal - a.qtdTotal)
+      .slice(0, 10);
+  }, [filtradas, modelos, motivos, tiposDefeito, pecas]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE));
   const ordenadas = useMemo(
@@ -530,73 +475,32 @@ export default function Dashboard() {
       <section className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold tracking-tight">Análise de produto</h2>
+            <h2 className="text-sm font-semibold tracking-tight">Produtos que mais voltam</h2>
             <p className="text-xs text-muted-foreground">
-              Cruzamentos para entender por que cada produto está voltando — modelagem, cor, peça defeituosa.
+              Ranking dos modelos com mais devoluções no recorte atual. Clique em cada linha para
+              ver <span className="font-medium">por que</span> está voltando — motivos, tamanhos, cores e defeitos.
             </p>
           </div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Top 8 de cada
-          </span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Top 10</span>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <RankingCard
-            title="Modelos mais devolvidos"
-            subtitle="Ranking geral por modelo, com o motivo que mais aparece em cada um"
-            icon={<Package className="h-3.5 w-3.5" />}
-            empty="Sem devoluções no recorte atual."
-            rows={topModelos.map((r) => ({
-              key: r.modelo,
-              primary: r.modelo,
-              secondary: `${r.motivoTop} · ${r.motivoTopQtd} un.`,
-              value: r.qtd,
-            }))}
-          />
-
-          <RankingCard
-            title="Tipos de defeito mais frequentes"
-            subtitle="Informados no registro ou ao concluir a devolução"
-            icon={<Wrench className="h-3.5 w-3.5" />}
-            empty="Nenhum tipo de defeito informado ainda."
-            accent="destructive"
-            rows={topTiposDefeito.map((r) => ({
-              key: r.tipo,
-              primary: r.tipo,
-              secondary: `Mais comum em: ${r.modeloTop}`,
-              value: r.qtd,
-            }))}
-          />
-
-          <RankingCard
-            title="Tamanhos problemáticos"
-            subtitle="Combinações modelo + tamanho — sinal de modelagem (ex: 'G pequeno')"
-            icon={<Ruler className="h-3.5 w-3.5" />}
-            empty="Nenhum item com tamanho informado."
-            accent="warning"
-            rows={topModeloTamanho.map((r) => ({
-              key: `${r.modelo}-${r.tamanho}`,
-              primary: `${r.modelo}`,
-              badge: r.tamanho,
-              secondary: r.motivoTop,
-              value: r.qtd,
-            }))}
-          />
-
-          <RankingCard
-            title="Cores problemáticas"
-            subtitle="Combinações modelo + cor — sinal de problema específico (ex: transparência)"
-            icon={<Palette className="h-3.5 w-3.5" />}
-            empty="Nenhum item com cor informada."
-            accent="info"
-            rows={topModeloCor.map((r) => ({
-              key: `${r.modelo}-${r.cor}`,
-              primary: `${r.modelo}`,
-              badge: r.cor,
-              secondary: r.motivoTop,
-              value: r.qtd,
-            }))}
-          />
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
+          {produtosAnalise.length === 0 ? (
+            <p className="py-8 text-center text-xs text-muted-foreground">
+              Sem devoluções no recorte atual.
+            </p>
+          ) : (
+            <ol className="space-y-1">
+              {produtosAnalise.map((p, i) => (
+                <ProdutoAnaliseRow
+                  key={p.modelo}
+                  rank={i + 1}
+                  produto={p}
+                  maxQtd={produtosAnalise[0]?.qtdTotal ?? 1}
+                />
+              ))}
+            </ol>
+          )}
         </div>
       </section>
 
@@ -892,6 +796,137 @@ function RankingCard({
             );
           })}
         </ol>
+      )}
+    </div>
+  );
+}
+
+// ====== Análise de produto: linha expansível ======
+type Breakdown = { label: string; qtd: number };
+type ProdutoAnalise = {
+  modelo: string;
+  qtdTotal: number;
+  devolucoesCount: number;
+  motivos: Breakdown[];
+  tamanhos: Breakdown[];
+  cores: Breakdown[];
+  defeitos: Breakdown[];
+  componentes: Breakdown[];
+};
+
+function ProdutoAnaliseRow({
+  rank,
+  produto,
+  maxQtd,
+}: {
+  rank: number;
+  produto: ProdutoAnalise;
+  maxQtd: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const pct = maxQtd > 0 ? (produto.qtdTotal / maxQtd) * 100 : 0;
+
+  // Insight automático: o que mais explica as devoluções deste produto?
+  const insight = (() => {
+    const top = produto.motivos[0];
+    if (!top) return null;
+    const share = top.qtd / produto.qtdTotal;
+    const parts: string[] = [`${top.label} (${Math.round(share * 100)}%)`];
+    // Concentração de tamanho ou cor revela problema específico
+    const tamTop = produto.tamanhos[0];
+    if (tamTop && tamTop.qtd / produto.qtdTotal >= 0.5 && produto.tamanhos.length > 1) {
+      parts.push(`concentrado no tamanho ${tamTop.label}`);
+    }
+    const corTop = produto.cores[0];
+    if (corTop && corTop.qtd / produto.qtdTotal >= 0.5 && produto.cores.length > 1) {
+      parts.push(`concentrado na cor ${corTop.label}`);
+    }
+    const defTop = produto.defeitos[0];
+    if (defTop) parts.push(`defeito recorrente: ${defTop.label}`);
+    return parts.join(" · ");
+  })();
+
+  return (
+    <li>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="group relative flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-surface-muted/50 transition-colors">
+          <div
+            className="absolute inset-y-0 left-0 rounded-md bg-primary/15"
+            style={{ width: `${pct}%` }}
+            aria-hidden
+          />
+          <span className="relative w-6 shrink-0 text-[10px] font-mono text-muted-foreground tabular">
+            {String(rank).padStart(2, "0")}
+          </span>
+          <Package className="relative h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <div className="relative min-w-0 flex-1">
+            <div className="truncate text-sm font-medium">{produto.modelo}</div>
+            {insight && (
+              <p className="truncate text-[11px] text-muted-foreground">{insight}</p>
+            )}
+          </div>
+          <div className="relative flex items-baseline gap-1 shrink-0">
+            <span className="text-sm font-semibold tabular">{produto.qtdTotal}</span>
+            <span className="text-[10px] text-muted-foreground">un</span>
+            <span className="ml-2 text-[10px] text-muted-foreground tabular">
+              {produto.devolucoesCount} dev.
+            </span>
+          </div>
+          <ChevronDown
+            className={
+              "relative h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform " +
+              (open ? "rotate-180" : "")
+            }
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="grid gap-3 px-2 py-3 sm:grid-cols-2 lg:grid-cols-4 border-t border-dashed border-border mt-1">
+            <BreakdownList title="Motivos" rows={produto.motivos} />
+            <BreakdownList title="Tamanhos" rows={produto.tamanhos} empty="Sem tamanho informado" />
+            <BreakdownList title="Cores" rows={produto.cores} empty="Sem cor informada" />
+            <BreakdownList
+              title="Defeitos constatados"
+              rows={produto.defeitos}
+              empty="Nenhum defeito informado"
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </li>
+  );
+}
+
+function BreakdownList({
+  title,
+  rows,
+  empty = "—",
+}: {
+  title: string;
+  rows: Breakdown[];
+  empty?: string;
+}) {
+  const total = rows.reduce((s, r) => s + r.qtd, 0);
+  return (
+    <div>
+      <h4 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </h4>
+      {rows.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground italic">{empty}</p>
+      ) : (
+        <ul className="space-y-0.5">
+          {rows.slice(0, 5).map((r) => {
+            const pct = total > 0 ? Math.round((r.qtd / total) * 100) : 0;
+            return (
+              <li key={r.label} className="flex items-center justify-between gap-2 text-xs">
+                <span className="truncate">{r.label}</span>
+                <span className="shrink-0 tabular text-muted-foreground">
+                  {r.qtd} <span className="text-[10px]">({pct}%)</span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
