@@ -685,6 +685,15 @@ function FilterSelect({
   );
 }
 
+function FilterChip({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-muted px-2 py-0.5 text-[10px] font-medium">
+      <span className="uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-foreground">{value}</span>
+    </span>
+  );
+}
+
 function ChartCard({
   title,
   subtitle,
