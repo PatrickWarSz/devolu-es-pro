@@ -163,14 +163,21 @@ export default function Registrar() {
     (it) => it.modeloId && Number(it.quantidade) > 0,
   );
 
-  const valid =
-    form.empresaId &&
-    form.plataformaId &&
-    form.motivoId &&
-    Number(form.valorPedido) >= 0 &&
-    (!pedidoObrigatorio || form.pedidoId.trim().length > 0) &&
-    itensValidos.length === form.itens.length &&
-    form.itens.length > 0;
+  // Lista legível de campos faltando — usada para tooltip nos botões e toast.
+  // Mantemos os botões clicáveis para que o usuário entenda o motivo (em vez
+  // de ficar travado sem feedback algum).
+  const pedidoFaltando = pedidoObrigatorio && form.pedidoId.trim().length === 0;
+  const camposFaltando: string[] = [];
+  if (!form.empresaId) camposFaltando.push("Empresa");
+  if (!form.plataformaId) camposFaltando.push("Plataforma");
+  if (!form.motivoId) camposFaltando.push("Motivo");
+  if (pedidoFaltando) camposFaltando.push("ID do Pedido (obrigatório em disputa/perda)");
+  if (form.itens.length === 0 || itensValidos.length !== form.itens.length) {
+    camposFaltando.push("Modelo e quantidade em todos os itens");
+  }
+  if (Number(form.valorPedido) < 0) camposFaltando.push("Valor da devolução válido");
+
+  const valid = camposFaltando.length === 0;
 
   const totalCalc = Number(form.valorPedido || 0);
 
@@ -261,10 +268,8 @@ export default function Registrar() {
     e?.preventDefault();
     if (!valid) {
       toast({
-        title: "Preencha os campos obrigatórios",
-        description: pedidoObrigatorio
-          ? "Empresa, plataforma, motivo, ID do pedido (obrigatório em disputa/perda) e ao menos 1 item com modelo, qtd e valor."
-          : "Empresa, plataforma, motivo e ao menos 1 item com modelo, qtd e valor.",
+        title: "Faltam campos para registrar",
+        description: camposFaltando.join(" · "),
         variant: "destructive",
       });
       return;
@@ -601,11 +606,22 @@ export default function Registrar() {
               hint={pedidoObrigatorio ? "Necessário para rastrear disputa/perda" : "Opcional"}
             >
               <Input
-                placeholder="Ex: SHP-991023"
+                placeholder={pedidoObrigatorio ? "Obrigatório — ex: SHP-991023" : "Ex: SHP-991023"}
                 value={form.pedidoId}
                 onChange={(e) => set("pedidoId", e.target.value)}
-                className="font-mono text-sm"
+                className={cn(
+                  "font-mono text-sm",
+                  pedidoFaltando && "border-destructive/60 focus-visible:ring-destructive/40",
+                )}
+                aria-invalid={pedidoFaltando}
               />
+              {pedidoFaltando && (
+                <p className="text-[11px] text-destructive mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  Informe o ID do pedido para registrar uma devolução em{" "}
+                  {form.status === "dispute" ? "disputa" : "perda"}.
+                </p>
+              )}
             </Field>
 
             <Field label="ID da Devolução" hint="Opcional">
@@ -705,21 +721,33 @@ export default function Registrar() {
 
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface-muted/40 px-5 py-3">
-            <p className="text-xs text-muted-foreground">
-              <span className="kbd">⌘</span> <span className="kbd">↵</span> salvar ·{" "}
-              <span className="kbd">⌘⇧</span> <span className="kbd">↵</span> salvar e próxima
-            </p>
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-muted-foreground">
+                <span className="kbd">⌘</span> <span className="kbd">↵</span> salvar ·{" "}
+                <span className="kbd">⌘⇧</span> <span className="kbd">↵</span> salvar e próxima
+              </p>
+              {!valid && (
+                <p className="text-[11px] text-warning-soft-foreground flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  Falta preencher: {camposFaltando.join(", ")}.
+                </p>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => submit(undefined, true)}
-                disabled={!valid}
+                title={!valid ? `Falta preencher: ${camposFaltando.join(", ")}` : undefined}
               >
                 Salvar e próxima
               </Button>
-              <Button type="submit" size="sm" disabled={!valid}>
+              <Button
+                type="submit"
+                size="sm"
+                title={!valid ? `Falta preencher: ${camposFaltando.join(", ")}` : undefined}
+              >
                 Registrar devolução
               </Button>
             </div>
