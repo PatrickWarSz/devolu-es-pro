@@ -723,21 +723,33 @@ export default function Registrar() {
 
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface-muted/40 px-5 py-3">
-            <p className="text-xs text-muted-foreground">
-              <span className="kbd">⌘</span> <span className="kbd">↵</span> salvar ·{" "}
-              <span className="kbd">⌘⇧</span> <span className="kbd">↵</span> salvar e próxima
-            </p>
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-muted-foreground">
+                <span className="kbd">⌘</span> <span className="kbd">↵</span> salvar ·{" "}
+                <span className="kbd">⌘⇧</span> <span className="kbd">↵</span> salvar e próxima
+              </p>
+              {!valid && (
+                <p className="text-[11px] text-warning-soft-foreground flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  Falta preencher: {camposFaltando.join(", ")}.
+                </p>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => submit(undefined, true)}
-                disabled={!valid}
+                title={!valid ? `Falta preencher: ${camposFaltando.join(", ")}` : undefined}
               >
                 Salvar e próxima
               </Button>
-              <Button type="submit" size="sm" disabled={!valid}>
+              <Button
+                type="submit"
+                size="sm"
+                title={!valid ? `Falta preencher: ${camposFaltando.join(", ")}` : undefined}
+              >
                 Registrar devolução
               </Button>
             </div>
