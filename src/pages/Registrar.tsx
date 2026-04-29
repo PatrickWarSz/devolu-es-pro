@@ -98,7 +98,19 @@ export default function Registrar() {
   const pedidosACaminho = useStore((s) => s.pedidosACaminho);
   const deletePedidoACaminho = useStore((s) => s.deletePedidoACaminho);
 
-  const firstFieldRef = useRef<HTMLButtonElement>(null);
+  // Refs para navegação determinística por teclado (Enter avança, sem depender
+  // de varredura genérica do DOM). Ordem: Empresa → Plataforma → Competência →
+  // Motivo → [Tipo defeito] → ID Pedido → ID Devolução → Valor → Submit.
+  const empresaRef = useRef<HTMLButtonElement>(null);
+  const plataformaRef = useRef<HTMLButtonElement>(null);
+  const competenciaRef = useRef<HTMLInputElement>(null);
+  const motivoRef = useRef<HTMLButtonElement>(null);
+  const tipoDefeitoRef = useRef<HTMLButtonElement>(null);
+  const pedidoIdRef = useRef<HTMLInputElement>(null);
+  const devolucaoIdRef = useRef<HTMLInputElement>(null);
+  const valorRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const firstFieldRef = empresaRef; // mantém o nome usado em outros pontos
   const pedidoBuscaRef = useRef<HTMLInputElement>(null);
   const [pedidoBusca, setPedidoBusca] = useState("");
   const [pedidoOriginalId, setPedidoOriginalId] = useState<string | null>(null);
