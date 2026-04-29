@@ -7,6 +7,7 @@ import { QuickSelect } from "@/components/QuickSelect";
 import { useStore, lookup } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { fmtBRL, fmtDateTime, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
+import { advanceOnEnter } from "@/lib/focus";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 import {
