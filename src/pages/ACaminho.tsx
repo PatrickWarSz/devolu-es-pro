@@ -75,7 +75,16 @@ export default function ACaminho() {
 
   const [form, setForm] = useState<FormState>(empty());
   const [busca, setBusca] = useState("");
-  const firstFieldRef = useRef<HTMLButtonElement>(null);
+  // Refs para navegação determinística por teclado.
+  const pedidoIdRef = useRef<HTMLInputElement>(null);
+  const empresaRef = useRef<HTMLButtonElement>(null);
+  const plataformaRef = useRef<HTMLButtonElement>(null);
+  const devolucaoIdRef = useRef<HTMLInputElement>(null);
+  const motivoRef = useRef<HTMLButtonElement>(null);
+  const notasRef = useRef<HTMLInputElement>(null);
+  const valorRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const firstFieldRef = pedidoIdRef;
 
   const plataformasDisponiveis = useMemo(() => {
     if (!form.empresaId) return [];
