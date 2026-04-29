@@ -607,6 +607,8 @@ export default function Registrar() {
                 hint="opcional · ajuda nas análises"
               >
                 <QuickSelect
+                  triggerRef={tipoDefeitoRef}
+                  nextFocusRef={pedidoIdRef}
                   value={form.tipoDefeitoId || "__none__"}
                   onValueChange={(v) =>
                     set("tipoDefeitoId", v === "__none__" ? "" : v)
