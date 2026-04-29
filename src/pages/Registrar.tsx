@@ -772,6 +772,7 @@ export default function Registrar() {
                 Salvar e próxima
               </Button>
               <Button
+                ref={submitRef}
                 type="submit"
                 size="sm"
                 title={!valid ? `Falta preencher: ${camposFaltando.join(", ")}` : undefined}
