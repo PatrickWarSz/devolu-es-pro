@@ -523,7 +523,8 @@ export default function Registrar() {
           <div className="grid gap-x-4 gap-y-4 p-5 md:grid-cols-2">
             <Field label="Empresa" required>
               <QuickSelect
-                triggerRef={firstFieldRef}
+                triggerRef={empresaRef}
+                nextFocusRef={plataformaRef}
                 value={form.empresaId}
                 onValueChange={(v) => set("empresaId", v)}
                 placeholder="Selecione a empresa"
@@ -541,6 +542,8 @@ export default function Registrar() {
               }
             >
               <QuickSelect
+                triggerRef={plataformaRef}
+                nextFocusRef={competenciaRef}
                 value={form.plataformaId}
                 onValueChange={(v) => set("plataformaId", v)}
                 disabled={!form.empresaId}
@@ -557,14 +560,18 @@ export default function Registrar() {
 
             <Field label="Mês / Competência">
               <Input
+                ref={competenciaRef}
                 type="month"
                 value={form.competencia}
                 onChange={(e) => set("competencia", e.target.value)}
+                onKeyDown={advanceOnEnter(motivoRef)}
               />
             </Field>
 
             <Field label="Motivo da devolução" required>
               <QuickSelect
+                triggerRef={motivoRef}
+                nextFocusRef={exigeTipoDefeito ? tipoDefeitoRef : pedidoIdRef}
                 value={form.motivoId}
                 onValueChange={(v) => set("motivoId", v)}
                 placeholder="Selecione o motivo"
