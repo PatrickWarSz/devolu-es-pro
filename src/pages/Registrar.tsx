@@ -363,7 +363,7 @@ export default function Registrar() {
     <div className="space-y-6">
       <PageHeader
         title="Registrar devolução"
-        description="Use ↑/↓ para navegar opções, Enter para selecionar e avançar, Tab para pular. ⌘/Ctrl + Enter salva."
+        description="Enter avança · Tab pula · ↑/↓ navegam dentro de uma lista · ⌘/Ctrl + Enter salva"
         actions={
           <Button variant="ghost" size="sm" onClick={() => setForm(empty())}>
             Limpar
