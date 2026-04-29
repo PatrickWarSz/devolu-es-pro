@@ -628,9 +628,11 @@ export default function Registrar() {
               hint={pedidoObrigatorio ? "Necessário para rastrear disputa/perda" : "Opcional"}
             >
               <Input
+                ref={pedidoIdRef}
                 placeholder={pedidoObrigatorio ? "Obrigatório — ex: SHP-991023" : "Ex: SHP-991023"}
                 value={form.pedidoId}
                 onChange={(e) => set("pedidoId", e.target.value)}
+                onKeyDown={advanceOnEnter(devolucaoIdRef)}
                 className={cn(
                   "font-mono text-sm",
                   pedidoFaltando && "border-destructive/60 focus-visible:ring-destructive/40",
@@ -648,9 +650,11 @@ export default function Registrar() {
 
             <Field label="ID da Devolução" hint="Opcional">
               <Input
+                ref={devolucaoIdRef}
                 placeholder="Ex: DEV-00823"
                 value={form.devolucaoId}
                 onChange={(e) => set("devolucaoId", e.target.value)}
+                onKeyDown={advanceOnEnter(valorRef)}
                 className="font-mono text-sm"
               />
             </Field>
@@ -662,12 +666,14 @@ export default function Registrar() {
                 hint="valor único do pedido inteiro — independente de quantos itens"
               >
                 <Input
+                  ref={valorRef}
                   type="number"
                   min={0}
                   step="0.01"
                   placeholder="0,00"
                   value={form.valorPedido || ""}
                   onChange={(e) => set("valorPedido", Number(e.target.value))}
+                  onKeyDown={advanceOnEnter(submitRef)}
                   className="tabular text-base font-medium"
                 />
               </Field>
