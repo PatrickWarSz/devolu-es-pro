@@ -7,6 +7,7 @@ import { QuickSelect } from "@/components/QuickSelect";
 import { useStore, lookup } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { fmtBRL, fmtDateTime, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
+import { advanceOnEnter } from "@/lib/focus";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 import {
@@ -74,7 +75,16 @@ export default function ACaminho() {
 
   const [form, setForm] = useState<FormState>(empty());
   const [busca, setBusca] = useState("");
-  const firstFieldRef = useRef<HTMLButtonElement>(null);
+  // Refs para navegação determinística por teclado.
+  const pedidoIdRef = useRef<HTMLInputElement>(null);
+  const empresaRef = useRef<HTMLButtonElement>(null);
+  const plataformaRef = useRef<HTMLButtonElement>(null);
+  const devolucaoIdRef = useRef<HTMLInputElement>(null);
+  const motivoRef = useRef<HTMLButtonElement>(null);
+  const notasRef = useRef<HTMLInputElement>(null);
+  const valorRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const firstFieldRef = pedidoIdRef;
 
   const plataformasDisponiveis = useMemo(() => {
     if (!form.empresaId) return [];
@@ -210,9 +220,11 @@ export default function ACaminho() {
           <div className="grid gap-4 p-5">
             <Field label="ID do pedido" required>
               <Input
+                ref={pedidoIdRef}
                 placeholder="Ex: SHP-991023"
                 value={form.pedidoId}
                 onChange={(e) => set("pedidoId", e.target.value)}
+                onKeyDown={advanceOnEnter(empresaRef)}
                 className="font-mono text-sm"
               />
             </Field>
@@ -220,7 +232,8 @@ export default function ACaminho() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="Empresa" required>
                 <QuickSelect
-                  triggerRef={firstFieldRef}
+                  triggerRef={empresaRef}
+                  nextFocusRef={plataformaRef}
                   value={form.empresaId}
                   onValueChange={(v) => set("empresaId", v)}
                   placeholder="Empresa"
@@ -229,6 +242,8 @@ export default function ACaminho() {
               </Field>
               <Field label="Plataforma" required>
                 <QuickSelect
+                  triggerRef={plataformaRef}
+                  nextFocusRef={devolucaoIdRef}
                   value={form.plataformaId}
                   onValueChange={(v) => set("plataformaId", v)}
                   disabled={!form.empresaId}
@@ -241,14 +256,18 @@ export default function ACaminho() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="ID devolução" hint="opcional">
                 <Input
+                  ref={devolucaoIdRef}
                   placeholder="DEV-00823"
                   value={form.devolucaoId}
                   onChange={(e) => set("devolucaoId", e.target.value)}
+                  onKeyDown={advanceOnEnter(motivoRef)}
                   className="font-mono text-sm"
                 />
               </Field>
               <Field label="Motivo previsto" hint="opcional">
                 <QuickSelect
+                  triggerRef={motivoRef}
+                  nextFocusRef={notasRef}
                   value={form.motivoId}
                   onValueChange={(v) => set("motivoId", v)}
                   placeholder="—"
@@ -259,20 +278,24 @@ export default function ACaminho() {
 
             <Field label="Notas" hint="opcional">
               <Input
+                ref={notasRef}
                 placeholder="Ex: cliente disse que veio com mancha"
                 value={form.notas}
                 onChange={(e) => set("notas", e.target.value)}
+                onKeyDown={advanceOnEnter(valorRef)}
               />
             </Field>
 
             <Field label="Valor total da devolução (R$)" required hint="valor único do pedido inteiro">
               <Input
+                ref={valorRef}
                 type="number"
                 min={0}
                 step="0.01"
                 placeholder="0,00"
                 value={form.valorPedido || ""}
                 onChange={(e) => set("valorPedido", Number(e.target.value))}
+                onKeyDown={advanceOnEnter(submitRef)}
                 className="tabular text-base font-medium"
               />
             </Field>
@@ -312,7 +335,7 @@ export default function ACaminho() {
           </div>
 
           <div className="border-t border-border bg-surface-muted/40 px-5 py-3 flex justify-end">
-            <Button type="submit" size="sm" disabled={!valid}>
+            <Button ref={submitRef} type="submit" size="sm" disabled={!valid}>
               <Truck className="h-3.5 w-3.5 mr-1.5" />
               Registrar pedido
             </Button>

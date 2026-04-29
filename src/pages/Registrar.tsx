@@ -11,6 +11,7 @@ import type { ReturnStatus, DevolucaoItem, PedidoACaminho } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, AlertCircle, XCircle, Trash2, Sparkles, Plus, Package, Truck, X } from "lucide-react";
 import { fmtBRL, fmtDateTime, isToday, statusLabel, valorTotal, quantidadeTotal, motivoGeraPerda } from "@/lib/format";
+import { advanceOnEnter } from "@/lib/focus";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -98,7 +99,19 @@ export default function Registrar() {
   const pedidosACaminho = useStore((s) => s.pedidosACaminho);
   const deletePedidoACaminho = useStore((s) => s.deletePedidoACaminho);
 
-  const firstFieldRef = useRef<HTMLButtonElement>(null);
+  // Refs para navegação determinística por teclado (Enter avança, sem depender
+  // de varredura genérica do DOM). Ordem: Empresa → Plataforma → Competência →
+  // Motivo → [Tipo defeito] → ID Pedido → ID Devolução → Valor → Submit.
+  const empresaRef = useRef<HTMLButtonElement>(null);
+  const plataformaRef = useRef<HTMLButtonElement>(null);
+  const competenciaRef = useRef<HTMLInputElement>(null);
+  const motivoRef = useRef<HTMLButtonElement>(null);
+  const tipoDefeitoRef = useRef<HTMLButtonElement>(null);
+  const pedidoIdRef = useRef<HTMLInputElement>(null);
+  const devolucaoIdRef = useRef<HTMLInputElement>(null);
+  const valorRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const firstFieldRef = empresaRef; // mantém o nome usado em outros pontos
   const pedidoBuscaRef = useRef<HTMLInputElement>(null);
   const [pedidoBusca, setPedidoBusca] = useState("");
   const [pedidoOriginalId, setPedidoOriginalId] = useState<string | null>(null);
@@ -350,7 +363,7 @@ export default function Registrar() {
     <div className="space-y-6">
       <PageHeader
         title="Registrar devolução"
-        description="Use ↑/↓ para navegar opções, Enter para selecionar e avançar, Tab para pular. ⌘/Ctrl + Enter salva."
+        description="Enter avança · Tab pula · ↑/↓ navegam dentro de uma lista · ⌘/Ctrl + Enter salva"
         actions={
           <Button variant="ghost" size="sm" onClick={() => setForm(empty())}>
             Limpar
@@ -510,7 +523,8 @@ export default function Registrar() {
           <div className="grid gap-x-4 gap-y-4 p-5 md:grid-cols-2">
             <Field label="Empresa" required>
               <QuickSelect
-                triggerRef={firstFieldRef}
+                triggerRef={empresaRef}
+                nextFocusRef={plataformaRef}
                 value={form.empresaId}
                 onValueChange={(v) => set("empresaId", v)}
                 placeholder="Selecione a empresa"
@@ -528,6 +542,8 @@ export default function Registrar() {
               }
             >
               <QuickSelect
+                triggerRef={plataformaRef}
+                nextFocusRef={competenciaRef}
                 value={form.plataformaId}
                 onValueChange={(v) => set("plataformaId", v)}
                 disabled={!form.empresaId}
@@ -544,14 +560,18 @@ export default function Registrar() {
 
             <Field label="Mês / Competência">
               <Input
+                ref={competenciaRef}
                 type="month"
                 value={form.competencia}
                 onChange={(e) => set("competencia", e.target.value)}
+                onKeyDown={advanceOnEnter(motivoRef)}
               />
             </Field>
 
             <Field label="Motivo da devolução" required>
               <QuickSelect
+                triggerRef={motivoRef}
+                nextFocusRef={exigeTipoDefeito ? tipoDefeitoRef : pedidoIdRef}
                 value={form.motivoId}
                 onValueChange={(v) => set("motivoId", v)}
                 placeholder="Selecione o motivo"
@@ -587,6 +607,8 @@ export default function Registrar() {
                 hint="opcional · ajuda nas análises"
               >
                 <QuickSelect
+                  triggerRef={tipoDefeitoRef}
+                  nextFocusRef={pedidoIdRef}
                   value={form.tipoDefeitoId || "__none__"}
                   onValueChange={(v) =>
                     set("tipoDefeitoId", v === "__none__" ? "" : v)
@@ -606,9 +628,11 @@ export default function Registrar() {
               hint={pedidoObrigatorio ? "Necessário para rastrear disputa/perda" : "Opcional"}
             >
               <Input
+                ref={pedidoIdRef}
                 placeholder={pedidoObrigatorio ? "Obrigatório — ex: SHP-991023" : "Ex: SHP-991023"}
                 value={form.pedidoId}
                 onChange={(e) => set("pedidoId", e.target.value)}
+                onKeyDown={advanceOnEnter(devolucaoIdRef)}
                 className={cn(
                   "font-mono text-sm",
                   pedidoFaltando && "border-destructive/60 focus-visible:ring-destructive/40",
@@ -626,9 +650,11 @@ export default function Registrar() {
 
             <Field label="ID da Devolução" hint="Opcional">
               <Input
+                ref={devolucaoIdRef}
                 placeholder="Ex: DEV-00823"
                 value={form.devolucaoId}
                 onChange={(e) => set("devolucaoId", e.target.value)}
+                onKeyDown={advanceOnEnter(valorRef)}
                 className="font-mono text-sm"
               />
             </Field>
@@ -640,12 +666,14 @@ export default function Registrar() {
                 hint="valor único do pedido inteiro — independente de quantos itens"
               >
                 <Input
+                  ref={valorRef}
                   type="number"
                   min={0}
                   step="0.01"
                   placeholder="0,00"
                   value={form.valorPedido || ""}
                   onChange={(e) => set("valorPedido", Number(e.target.value))}
+                  onKeyDown={advanceOnEnter(submitRef)}
                   className="tabular text-base font-medium"
                 />
               </Field>
@@ -744,6 +772,7 @@ export default function Registrar() {
                 Salvar e próxima
               </Button>
               <Button
+                ref={submitRef}
                 type="submit"
                 size="sm"
                 title={!valid ? `Falta preencher: ${camposFaltando.join(", ")}` : undefined}

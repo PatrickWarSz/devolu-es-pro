@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -18,19 +18,27 @@ interface QuickSelectProps {
   options: QuickSelectOption[];
   placeholder?: string;
   disabled?: boolean;
-  /** Ref para o trigger (para foco programático) */
+  /** Ref para o trigger (foco programático). */
   triggerRef?: React.Ref<HTMLButtonElement>;
-  /** Abre o dropdown automaticamente ao ganhar foco */
-  openOnFocus?: boolean;
-  /** Após selecionar (Enter / clique), foca o próximo elemento focável do form */
+  /**
+   * Ref do próximo campo a focar após selecionar uma opção.
+   * Quando informado, garante avanço determinístico (não depende de varredura do DOM).
+   */
+  nextFocusRef?: React.RefObject<HTMLElement>;
+  /** Após Enter/clique numa opção, foca o próximo campo. Default true. */
   advanceOnSelect?: boolean;
+  /** id opcional para acessibilidade / label. */
+  id?: string;
 }
 
 /**
- * Select otimizado para data-entry rápido:
- * - Setas ↑/↓ navegam pelas opções (nativo do Radix quando aberto)
- * - Enter abre o dropdown e, ao escolher, avança para o próximo campo
- * - Tab pula o campo sem selecionar (comportamento padrão preservado)
+ * Select otimizado para data-entry rápido e PREVISÍVEL:
+ * - NÃO abre automaticamente ao receber foco (Tab continua nativo).
+ * - Enter / Espaço abre o dropdown (comportamento nativo do Radix).
+ * - Setas ↑/↓ navegam pelas opções dentro do dropdown aberto.
+ * - Ao selecionar uma opção, o foco avança para `nextFocusRef` se informado,
+ *   ou para o próximo focável do form como fallback.
+ * - Tab nunca abre o dropdown nem rouba foco.
  */
 export function QuickSelect({
   value,
@@ -39,31 +47,42 @@ export function QuickSelect({
   placeholder,
   disabled,
   triggerRef,
-  openOnFocus = true,
+  nextFocusRef,
   advanceOnSelect = true,
+  id,
 }: QuickSelectProps) {
   const [open, setOpen] = useState(false);
   const innerRef = useRef<HTMLButtonElement>(null);
-  // Bloqueia reabertura imediata quando o foco volta ao trigger logo após uma seleção
-  const justInteractedRef = useRef(false);
 
   const setRef = useCallback(
     (node: HTMLButtonElement | null) => {
       innerRef.current = node;
       if (typeof triggerRef === "function") triggerRef(node);
-      else if (triggerRef) (triggerRef as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+      else if (triggerRef)
+        (triggerRef as React.MutableRefObject<HTMLButtonElement | null>).current = node;
     },
     [triggerRef],
   );
 
-  const markInteracted = () => {
-    justInteractedRef.current = true;
-    setTimeout(() => {
-      justInteractedRef.current = false;
-    }, 250);
-  };
-
   const focusNext = () => {
+    // Preferência: ref explícito (ordem determinística).
+    const explicit = nextFocusRef?.current;
+    if (explicit) {
+      explicit.focus();
+      // Se for input/textarea, seleciona o conteúdo para sobrescrever rápido.
+      if (
+        explicit instanceof HTMLInputElement ||
+        explicit instanceof HTMLTextAreaElement
+      ) {
+        try {
+          explicit.select();
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
+    // Fallback: próximo focável do form.
     const trigger = innerRef.current;
     if (!trigger) return;
     const form = trigger.closest("form");
@@ -72,54 +91,30 @@ export function QuickSelect({
       root.querySelectorAll<HTMLElement>(
         'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       ),
-    ).filter((el) => !el.hasAttribute("data-skip-focus") && el.offsetParent !== null);
+    ).filter(
+      (el) => !el.hasAttribute("data-skip-focus") && el.offsetParent !== null,
+    );
     const idx = focusables.indexOf(trigger);
     const next = focusables[idx + 1];
-    if (next) {
-      next.setAttribute("data-advanced-focus", "1");
-      next.focus();
-      setTimeout(() => next.removeAttribute("data-advanced-focus"), 100);
-    }
+    next?.focus();
   };
 
   return (
     <Select
       value={value}
       onValueChange={(v) => {
-        markInteracted();
         onValueChange(v);
         if (advanceOnSelect) {
-          // Aguarda o Radix fechar o popover e devolver foco antes de avançar
-          setTimeout(focusNext, 60);
+          // Aguarda o Radix fechar o popover e devolver foco ao trigger
+          // antes de mover o foco para o próximo campo.
+          setTimeout(focusNext, 30);
         }
       }}
       open={open}
-      onOpenChange={(next) => {
-        // Se acabamos de selecionar, ignora pedidos de "abrir" vindos do Radix devolvendo o foco
-        if (next && justInteractedRef.current) return;
-        setOpen(next);
-      }}
+      onOpenChange={setOpen}
       disabled={disabled}
     >
-      <SelectTrigger
-        ref={setRef}
-        onFocus={(e) => {
-          if (!openOnFocus) return;
-          if (justInteractedRef.current) return;
-          if (e.currentTarget.hasAttribute("data-advanced-focus")) return;
-          setOpen(true);
-        }}
-        onKeyDown={(e) => {
-          // Tab nunca deve abrir/selecionar — deixa o navegador mover o foco
-          if (e.key === "Tab") {
-            markInteracted();
-          }
-          // Escape fecha sem mexer
-          if (e.key === "Escape" && open) {
-            markInteracted();
-          }
-        }}
-      >
+      <SelectTrigger ref={setRef} id={id}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
