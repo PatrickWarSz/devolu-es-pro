@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QuickSelect } from "@/components/QuickSelect";
+import { VariantPicker } from "@/components/VariantPicker";
 import { useStore, lookup } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { fmtBRL, fmtDateTime, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
