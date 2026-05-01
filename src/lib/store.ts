@@ -142,6 +142,7 @@ export const useStore = create<State & Actions>()(
       plataformas: seedPlataformas,
       contas: seedContas,
       modelos: seedModelos,
+      modeloVariantes: seedModeloVariantes,
       pecas: seedPecas,
       cores: seedCores,
       tamanhos: seedTamanhos,
