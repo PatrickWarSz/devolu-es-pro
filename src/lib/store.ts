@@ -460,5 +460,40 @@ export const selectPlataformasDeEmpresa = (empresaId: string | undefined) => {
   return plataformas.filter((p) => ids.includes(p.id));
 };
 
+/** Resultado: as variantes (cores/tamanhos) disponíveis para um modelo.
+ *  Se o modelo NÃO tiver vínculo cadastrado, devolve todas as cores/tamanhos
+ *  do catálogo (fallback "mostrar tudo"). Se tiver, devolve apenas as
+ *  vinculadas — acelerando o cadastro. */
+export interface VariantesResolvidas {
+  cores: { nome: string }[];
+  tamanhos: { nome: string }[];
+  /** true quando o modelo tem vínculo explícito (mesmo que parcial em uma das listas). */
+  hasVinculo: boolean;
+}
+
+export const selectVariantesDoModelo = (
+  modeloId: string | undefined,
+  todasCores: { nome: string }[],
+  todosTamanhos: { nome: string }[],
+  modeloVariantes: ModeloVariantes[],
+): VariantesResolvidas => {
+  if (!modeloId) {
+    return { cores: todasCores, tamanhos: todosTamanhos, hasVinculo: false };
+  }
+  const mv = modeloVariantes.find((m) => m.modeloId === modeloId);
+  if (!mv) {
+    return { cores: todasCores, tamanhos: todosTamanhos, hasVinculo: false };
+  }
+  // Quando uma das listas está vazia, faz fallback APENAS daquela lista.
+  // Ex.: modelo só tem cores cadastradas → mostra só as cores vinculadas
+  // mas todos os tamanhos do catálogo.
+  return {
+    cores: mv.cores.length > 0 ? mv.cores.map((nome) => ({ nome })) : todasCores,
+    tamanhos:
+      mv.tamanhos.length > 0 ? mv.tamanhos.map((nome) => ({ nome })) : todosTamanhos,
+    hasVinculo: true,
+  };
+};
+
 export const lookup = <T extends { id: string; nome: string }>(arr: T[], id: string) =>
   arr.find((x) => x.id === id)?.nome ?? "—";
