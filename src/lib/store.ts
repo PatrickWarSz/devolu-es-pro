@@ -260,7 +260,96 @@ export const useStore = create<State & Actions>()(
         set((s) => ({ modelos: [...s.modelos, n] }));
         return n;
       },
-      deleteModelo: (id) => set((s) => ({ modelos: s.modelos.filter((x) => x.id !== id) })),
+      deleteModelo: (id) =>
+        set((s) => ({
+          modelos: s.modelos.filter((x) => x.id !== id),
+          // Limpa variantes vinculadas ao modelo removido para evitar lixo.
+          modeloVariantes: s.modeloVariantes.filter((mv) => mv.modeloId !== id),
+        })),
+      toggleModeloCor: (modeloId, cor) =>
+        set((s) => {
+          const existente = s.modeloVariantes.find((mv) => mv.modeloId === modeloId);
+          if (!existente) {
+            return {
+              modeloVariantes: [
+                ...s.modeloVariantes,
+                { id: uid("mv"), modeloId, cores: [cor], tamanhos: [] },
+              ],
+            };
+          }
+          const has = existente.cores.includes(cor);
+          return {
+            modeloVariantes: s.modeloVariantes.map((mv) =>
+              mv.id === existente.id
+                ? {
+                    ...mv,
+                    cores: has
+                      ? mv.cores.filter((c) => c !== cor)
+                      : [...mv.cores, cor],
+                  }
+                : mv,
+            ),
+          };
+        }),
+      toggleModeloTamanho: (modeloId, tamanho) =>
+        set((s) => {
+          const existente = s.modeloVariantes.find((mv) => mv.modeloId === modeloId);
+          if (!existente) {
+            return {
+              modeloVariantes: [
+                ...s.modeloVariantes,
+                { id: uid("mv"), modeloId, cores: [], tamanhos: [tamanho] },
+              ],
+            };
+          }
+          const has = existente.tamanhos.includes(tamanho);
+          return {
+            modeloVariantes: s.modeloVariantes.map((mv) =>
+              mv.id === existente.id
+                ? {
+                    ...mv,
+                    tamanhos: has
+                      ? mv.tamanhos.filter((t) => t !== tamanho)
+                      : [...mv.tamanhos, tamanho],
+                  }
+                : mv,
+            ),
+          };
+        }),
+      addCorEVincular: (modeloId, nome) => {
+        const trimmed = nome.trim();
+        if (!trimmed) return;
+        const s = get();
+        // Cria a cor no catálogo se ainda não existir (case-insensitive).
+        const existente = s.cores.find(
+          (c) => c.nome.toLowerCase() === trimmed.toLowerCase(),
+        );
+        const corNome = existente?.nome ?? trimmed;
+        if (!existente) {
+          set((st) => ({ cores: [...st.cores, { id: uid("cor"), nome: trimmed }] }));
+        }
+        // Vincula ao modelo (sem duplicar).
+        const mv = get().modeloVariantes.find((m) => m.modeloId === modeloId);
+        if (!mv || !mv.cores.includes(corNome)) {
+          get().toggleModeloCor(modeloId, corNome);
+        }
+      },
+      addTamanhoEVincular: (modeloId, nome) => {
+        const trimmed = nome.trim();
+        if (!trimmed) return;
+        const s = get();
+        const existente = s.tamanhos.find(
+          (t) => t.nome.toLowerCase() === trimmed.toLowerCase(),
+        );
+        const tamNome = existente?.nome ?? trimmed;
+        if (!existente) {
+          set((st) => ({ tamanhos: [...st.tamanhos, { id: uid("tam"), nome: trimmed }] }));
+        }
+        const mv = get().modeloVariantes.find((m) => m.modeloId === modeloId);
+        if (!mv || !mv.tamanhos.includes(tamNome)) {
+          get().toggleModeloTamanho(modeloId, tamNome);
+        }
+      },
       addPeca: (nome) => {
         const n = { id: uid("pec"), nome };
         set((s) => ({ pecas: [...s.pecas, n] }));
