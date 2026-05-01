@@ -102,6 +102,123 @@ export default function Configuracoes() {
   );
 }
 
+function VariantesPanel() {
+  const modelos = useStore((s) => s.modelos);
+  const cores = useStore((s) => s.cores);
+  const tamanhos = useStore((s) => s.tamanhos);
+  const modeloVariantes = useStore((s) => s.modeloVariantes);
+  const toggleModeloCor = useStore((s) => s.toggleModeloCor);
+  const toggleModeloTamanho = useStore((s) => s.toggleModeloTamanho);
+
+  const get = (modeloId: string) =>
+    modeloVariantes.find((mv) => mv.modeloId === modeloId);
+
+  return (
+    <div className="rounded-lg border border-border bg-card shadow-xs">
+      <div className="border-b border-border px-4 py-3">
+        <h3 className="text-sm font-medium">Variantes por modelo (cores e tamanhos)</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Marque as cores e tamanhos que cada modelo realmente tem. No registro
+          de devolução, só essas opções aparecem — acelera o cadastro.
+          Modelos sem nada marcado mostram <span className="font-medium">tudo</span> (fallback).
+        </p>
+      </div>
+      <div className="divide-y divide-border">
+        {modelos.map((m) => {
+          const mv = get(m.id);
+          const corMarcadas = mv?.cores.length ?? 0;
+          const tamMarcados = mv?.tamanhos.length ?? 0;
+          const semVinculo = corMarcadas === 0 && tamMarcados === 0;
+          return (
+            <div key={m.id} className="px-4 py-3 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{m.nome}</p>
+                <span
+                  className={cn(
+                    "text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded border",
+                    semVinculo
+                      ? "bg-muted text-muted-foreground border-border"
+                      : "bg-primary-soft text-primary border-primary/30",
+                  )}
+                >
+                  {semVinculo
+                    ? "Mostra tudo"
+                    : `${corMarcadas} cor${corMarcadas === 1 ? "" : "es"} · ${tamMarcados} tam.`}
+                </span>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+                  Cores
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {cores.length === 0 && (
+                    <span className="text-[11px] text-muted-foreground italic">
+                      Cadastre cores primeiro em Catálogo.
+                    </span>
+                  )}
+                  {cores.map((c) => {
+                    const active = !!mv?.cores.includes(c.nome);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => toggleModeloCor(m.id, c.nome)}
+                        className={cn(
+                          "text-xs px-2 py-1 rounded border transition-colors",
+                          active
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "bg-surface-muted border-border text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        {c.nome}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+                  Tamanhos
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {tamanhos.length === 0 && (
+                    <span className="text-[11px] text-muted-foreground italic">
+                      Cadastre tamanhos primeiro em Catálogo.
+                    </span>
+                  )}
+                  {tamanhos.map((t) => {
+                    const active = !!mv?.tamanhos.includes(t.nome);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => toggleModeloTamanho(m.id, t.nome)}
+                        className={cn(
+                          "text-xs px-2 py-1 rounded border transition-colors min-w-[36px]",
+                          active
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "bg-surface-muted border-border text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        {t.nome}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {modelos.length === 0 && (
+          <p className="px-4 py-6 text-xs text-center text-muted-foreground">
+            Cadastre modelos no Catálogo para vincular cores e tamanhos.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MotivosPanel() {
   const motivos = useStore((s) => s.motivos);
   const addMotivo = useStore((s) => s.addMotivo);
