@@ -22,6 +22,7 @@ import {
   seedDevolucoes,
   seedEmpresas,
   seedModelos,
+  seedModeloVariantes,
   seedMotivos,
   seedPecas,
   seedPlataformas,
