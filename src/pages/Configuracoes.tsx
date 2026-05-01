@@ -49,12 +49,16 @@ export default function Configuracoes() {
           <PlataformasPanel />
         </TabsContent>
         <TabsContent value="vinculos">
-          <VinculosPanel />
+          <div className="space-y-4">
+            <VinculosPanel />
+            <VariantesPanel />
+          </div>
         </TabsContent>
         <TabsContent value="catalogo">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <CatalogoPanel
               title="Modelos"
+              hint="Após cadastrar, vá em 'Vínculos' para definir as cores e tamanhos de cada modelo — acelera muito o registro de devoluções."
               items={useStore.getState().modelos}
               add={(n) => useStore.getState().addModelo(n)}
               del={(id) => useStore.getState().deleteModelo(id)}
