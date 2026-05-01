@@ -26,6 +26,21 @@ export interface Modelo {
   nome: string;
 }
 
+/** Vínculo Modelo → variantes disponíveis (cores e tamanhos).
+ *  Quando um modelo NÃO tem entrada aqui, o app mostra todas as cores/tamanhos
+ *  do catálogo (fallback "mostrar tudo"). Quando tem, os selects filtram pra
+ *  acelerar o cadastro: "Calça Legging só vem em Preto/Rosa/Branco e P/M".
+ *
+ *  Os arrays guardam NOMES (string), não IDs, porque cor/tamanho são gravados
+ *  como nome em DevolucaoItem.cor / tamanho — manter consistência facilita
+ *  filtragem e evita lookup extra. */
+export interface ModeloVariantes {
+  id: ID;
+  modeloId: ID;
+  cores: string[];   // nomes das cores permitidas
+  tamanhos: string[]; // nomes dos tamanhos permitidos
+}
+
 /** Componente do produto (ex.: legging, top, tela, carregador, peça única).
  *  Antes chamado de "Peça" — mantemos a chave `pecas` no store por compatibilidade. */
 export interface Peca {

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QuickSelect } from "@/components/QuickSelect";
+import { VariantPicker } from "@/components/VariantPicker";
 import { useStore, lookup } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { fmtBRL, fmtDateTime, daysBetween, valorTotal, quantidadeTotal } from "@/lib/format";
@@ -503,19 +504,19 @@ function ItemRow({
           </Field>
         </div>
         <Field label="Cor" compact>
-          <QuickSelect
+          <VariantPicker
+            kind="cor"
+            modeloId={item.modeloId}
             value={item.cor}
             onValueChange={(v) => onChange({ cor: v })}
-            placeholder="—"
-            options={cores.map((c) => ({ value: c.nome, label: c.nome }))}
           />
         </Field>
         <Field label="Tamanho" compact>
-          <QuickSelect
+          <VariantPicker
+            kind="tamanho"
+            modeloId={item.modeloId}
             value={item.tamanho}
             onValueChange={(v) => onChange({ tamanho: v })}
-            placeholder="—"
-            options={tamanhos.map((t) => ({ value: t.nome, label: t.nome }))}
           />
         </Field>
         <Field label="Qtd" required compact>

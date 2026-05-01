@@ -7,6 +7,7 @@ import type {
   DevolucaoItem,
   Empresa,
   Modelo,
+  ModeloVariantes,
   Motivo,
   Peca,
   PedidoACaminho,
@@ -21,6 +22,7 @@ import {
   seedDevolucoes,
   seedEmpresas,
   seedModelos,
+  seedModeloVariantes,
   seedMotivos,
   seedPecas,
   seedPlataformas,
@@ -37,6 +39,7 @@ interface State {
   plataformas: Plataforma[];
   contas: ContaPlataforma[];
   modelos: Modelo[];
+  modeloVariantes: ModeloVariantes[];
   pecas: Peca[];
   cores: Cor[];
   tamanhos: Tamanho[];
@@ -72,6 +75,14 @@ interface Actions {
 
   addModelo: (nome: string) => Modelo;
   deleteModelo: (id: string) => void;
+  /** Vincula/desvincula uma cor (por nome) a um modelo. */
+  toggleModeloCor: (modeloId: string, cor: string) => void;
+  /** Vincula/desvincula um tamanho (por nome) a um modelo. */
+  toggleModeloTamanho: (modeloId: string, tamanho: string) => void;
+  /** Cria a cor no catálogo (se ainda não existir) E vincula ao modelo. */
+  addCorEVincular: (modeloId: string, nome: string) => void;
+  /** Cria o tamanho no catálogo (se ainda não existir) E vincula ao modelo. */
+  addTamanhoEVincular: (modeloId: string, nome: string) => void;
   addPeca: (nome: string) => Peca;
   deletePeca: (id: string) => void;
   addCor: (nome: string) => Cor;
@@ -132,6 +143,7 @@ export const useStore = create<State & Actions>()(
       plataformas: seedPlataformas,
       contas: seedContas,
       modelos: seedModelos,
+      modeloVariantes: seedModeloVariantes,
       pecas: seedPecas,
       cores: seedCores,
       tamanhos: seedTamanhos,
@@ -248,7 +260,96 @@ export const useStore = create<State & Actions>()(
         set((s) => ({ modelos: [...s.modelos, n] }));
         return n;
       },
-      deleteModelo: (id) => set((s) => ({ modelos: s.modelos.filter((x) => x.id !== id) })),
+      deleteModelo: (id) =>
+        set((s) => ({
+          modelos: s.modelos.filter((x) => x.id !== id),
+          // Limpa variantes vinculadas ao modelo removido para evitar lixo.
+          modeloVariantes: s.modeloVariantes.filter((mv) => mv.modeloId !== id),
+        })),
+      toggleModeloCor: (modeloId, cor) =>
+        set((s) => {
+          const existente = s.modeloVariantes.find((mv) => mv.modeloId === modeloId);
+          if (!existente) {
+            return {
+              modeloVariantes: [
+                ...s.modeloVariantes,
+                { id: uid("mv"), modeloId, cores: [cor], tamanhos: [] },
+              ],
+            };
+          }
+          const has = existente.cores.includes(cor);
+          return {
+            modeloVariantes: s.modeloVariantes.map((mv) =>
+              mv.id === existente.id
+                ? {
+                    ...mv,
+                    cores: has
+                      ? mv.cores.filter((c) => c !== cor)
+                      : [...mv.cores, cor],
+                  }
+                : mv,
+            ),
+          };
+        }),
+      toggleModeloTamanho: (modeloId, tamanho) =>
+        set((s) => {
+          const existente = s.modeloVariantes.find((mv) => mv.modeloId === modeloId);
+          if (!existente) {
+            return {
+              modeloVariantes: [
+                ...s.modeloVariantes,
+                { id: uid("mv"), modeloId, cores: [], tamanhos: [tamanho] },
+              ],
+            };
+          }
+          const has = existente.tamanhos.includes(tamanho);
+          return {
+            modeloVariantes: s.modeloVariantes.map((mv) =>
+              mv.id === existente.id
+                ? {
+                    ...mv,
+                    tamanhos: has
+                      ? mv.tamanhos.filter((t) => t !== tamanho)
+                      : [...mv.tamanhos, tamanho],
+                  }
+                : mv,
+            ),
+          };
+        }),
+      addCorEVincular: (modeloId, nome) => {
+        const trimmed = nome.trim();
+        if (!trimmed) return;
+        const s = get();
+        // Cria a cor no catálogo se ainda não existir (case-insensitive).
+        const existente = s.cores.find(
+          (c) => c.nome.toLowerCase() === trimmed.toLowerCase(),
+        );
+        const corNome = existente?.nome ?? trimmed;
+        if (!existente) {
+          set((st) => ({ cores: [...st.cores, { id: uid("cor"), nome: trimmed }] }));
+        }
+        // Vincula ao modelo (sem duplicar).
+        const mv = get().modeloVariantes.find((m) => m.modeloId === modeloId);
+        if (!mv || !mv.cores.includes(corNome)) {
+          get().toggleModeloCor(modeloId, corNome);
+        }
+      },
+      addTamanhoEVincular: (modeloId, nome) => {
+        const trimmed = nome.trim();
+        if (!trimmed) return;
+        const s = get();
+        const existente = s.tamanhos.find(
+          (t) => t.nome.toLowerCase() === trimmed.toLowerCase(),
+        );
+        const tamNome = existente?.nome ?? trimmed;
+        if (!existente) {
+          set((st) => ({ tamanhos: [...st.tamanhos, { id: uid("tam"), nome: trimmed }] }));
+        }
+        const mv = get().modeloVariantes.find((m) => m.modeloId === modeloId);
+        if (!mv || !mv.tamanhos.includes(tamNome)) {
+          get().toggleModeloTamanho(modeloId, tamNome);
+        }
+      },
       addPeca: (nome) => {
         const n = { id: uid("pec"), nome };
         set((s) => ({ pecas: [...s.pecas, n] }));
@@ -292,6 +393,7 @@ export const useStore = create<State & Actions>()(
           plataformas: seedPlataformas,
           contas: seedContas,
           modelos: seedModelos,
+          modeloVariantes: seedModeloVariantes,
           pecas: seedPecas,
           cores: seedCores,
           tamanhos: seedTamanhos,
@@ -302,7 +404,7 @@ export const useStore = create<State & Actions>()(
     }),
     {
       name: "devolucoes-pro-v1",
-      version: 4,
+      version: 5,
       migrate: (persistedState, version) => {
         const s = persistedState as Partial<State> | undefined;
         if (!s) return s as unknown as State & Actions;
@@ -338,6 +440,11 @@ export const useStore = create<State & Actions>()(
           // Catálogo de tipos de defeito é novo — semeia com defaults.
           next = { ...next, tiposDefeito: seedTiposDefeito };
         }
+        if (version < 5 && !Array.isArray(next.modeloVariantes)) {
+          // Vínculos modelo→cores/tamanhos são novos. Inicia vazio: o app cai
+          // no fallback "mostrar tudo" para todos os modelos antigos.
+          next = { ...next, modeloVariantes: [] };
+        }
         return next as unknown as State & Actions;
       },
     },
@@ -351,6 +458,41 @@ export const selectPlataformasDeEmpresa = (empresaId: string | undefined) => {
   const { contas, plataformas } = useStore.getState();
   const ids = contas.filter((c) => c.empresaId === empresaId).map((c) => c.plataformaId);
   return plataformas.filter((p) => ids.includes(p.id));
+};
+
+/** Resultado: as variantes (cores/tamanhos) disponíveis para um modelo.
+ *  Se o modelo NÃO tiver vínculo cadastrado, devolve todas as cores/tamanhos
+ *  do catálogo (fallback "mostrar tudo"). Se tiver, devolve apenas as
+ *  vinculadas — acelerando o cadastro. */
+export interface VariantesResolvidas {
+  cores: { nome: string }[];
+  tamanhos: { nome: string }[];
+  /** true quando o modelo tem vínculo explícito (mesmo que parcial em uma das listas). */
+  hasVinculo: boolean;
+}
+
+export const selectVariantesDoModelo = (
+  modeloId: string | undefined,
+  todasCores: { nome: string }[],
+  todosTamanhos: { nome: string }[],
+  modeloVariantes: ModeloVariantes[],
+): VariantesResolvidas => {
+  if (!modeloId) {
+    return { cores: todasCores, tamanhos: todosTamanhos, hasVinculo: false };
+  }
+  const mv = modeloVariantes.find((m) => m.modeloId === modeloId);
+  if (!mv) {
+    return { cores: todasCores, tamanhos: todosTamanhos, hasVinculo: false };
+  }
+  // Quando uma das listas está vazia, faz fallback APENAS daquela lista.
+  // Ex.: modelo só tem cores cadastradas → mostra só as cores vinculadas
+  // mas todos os tamanhos do catálogo.
+  return {
+    cores: mv.cores.length > 0 ? mv.cores.map((nome) => ({ nome })) : todasCores,
+    tamanhos:
+      mv.tamanhos.length > 0 ? mv.tamanhos.map((nome) => ({ nome })) : todosTamanhos,
+    hasVinculo: true,
+  };
 };
 
 export const lookup = <T extends { id: string; nome: string }>(arr: T[], id: string) =>
