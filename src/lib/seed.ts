@@ -46,6 +46,27 @@ export const seedModelos: Modelo[] = [
   { id: id("mod", 4), nome: "Conjunto Fitness" },
 ];
 
+/** Vínculos modelo → variantes (cores/tamanhos disponíveis).
+ *  Demonstra a feature: alguns modelos têm vínculo, outros não (fallback).
+ *  Modelos sem entrada aqui mostram TODAS as cores/tamanhos no cadastro. */
+export const seedModeloVariantes: ModeloVariantes[] = [
+  // Calça Legging — só vem em Preto, Cinza e Azul, tamanhos P, M, G
+  {
+    id: id("mv", 1),
+    modeloId: id("mod", 1),
+    cores: ["Preto", "Cinza", "Azul"],
+    tamanhos: ["P", "M", "G"],
+  },
+  // Top Cropped — versões Preto/Branco, tamanhos P e M apenas
+  {
+    id: id("mv", 2),
+    modeloId: id("mod", 3),
+    cores: ["Preto", "Branco"],
+    tamanhos: ["P", "M"],
+  },
+  // Short Esportivo e Conjunto Fitness ficam sem vínculo (fallback "mostrar tudo")
+];
+
 // "Peças" agora representa COMPONENTES do produto (parte que veio com problema
 // ou que compõe o pedido). Ex.: legging do conjunto, top do conjunto, carregador.
 // Mantemos a chave `seedPecas` por compatibilidade com store/persist.
