@@ -38,6 +38,7 @@ interface State {
   plataformas: Plataforma[];
   contas: ContaPlataforma[];
   modelos: Modelo[];
+  modeloVariantes: ModeloVariantes[];
   pecas: Peca[];
   cores: Cor[];
   tamanhos: Tamanho[];
