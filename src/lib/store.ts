@@ -440,6 +440,11 @@ export const useStore = create<State & Actions>()(
           // Catálogo de tipos de defeito é novo — semeia com defaults.
           next = { ...next, tiposDefeito: seedTiposDefeito };
         }
+        if (version < 5 && !Array.isArray(next.modeloVariantes)) {
+          // Vínculos modelo→cores/tamanhos são novos. Inicia vazio: o app cai
+          // no fallback "mostrar tudo" para todos os modelos antigos.
+          next = { ...next, modeloVariantes: [] };
+        }
         return next as unknown as State & Actions;
       },
     },
