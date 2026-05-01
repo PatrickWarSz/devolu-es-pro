@@ -393,6 +393,7 @@ export const useStore = create<State & Actions>()(
           plataformas: seedPlataformas,
           contas: seedContas,
           modelos: seedModelos,
+          modeloVariantes: seedModeloVariantes,
           pecas: seedPecas,
           cores: seedCores,
           tamanhos: seedTamanhos,
@@ -403,7 +404,7 @@ export const useStore = create<State & Actions>()(
     }),
     {
       name: "devolucoes-pro-v1",
-      version: 4,
+      version: 5,
       migrate: (persistedState, version) => {
         const s = persistedState as Partial<State> | undefined;
         if (!s) return s as unknown as State & Actions;
