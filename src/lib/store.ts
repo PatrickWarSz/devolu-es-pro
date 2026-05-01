@@ -74,6 +74,14 @@ interface Actions {
 
   addModelo: (nome: string) => Modelo;
   deleteModelo: (id: string) => void;
+  /** Vincula/desvincula uma cor (por nome) a um modelo. */
+  toggleModeloCor: (modeloId: string, cor: string) => void;
+  /** Vincula/desvincula um tamanho (por nome) a um modelo. */
+  toggleModeloTamanho: (modeloId: string, tamanho: string) => void;
+  /** Cria a cor no catálogo (se ainda não existir) E vincula ao modelo. */
+  addCorEVincular: (modeloId: string, nome: string) => void;
+  /** Cria o tamanho no catálogo (se ainda não existir) E vincula ao modelo. */
+  addTamanhoEVincular: (modeloId: string, nome: string) => void;
   addPeca: (nome: string) => Peca;
   deletePeca: (id: string) => void;
   addCor: (nome: string) => Cor;
