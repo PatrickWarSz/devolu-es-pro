@@ -5,6 +5,7 @@ import type {
   DevolucaoItem,
   Empresa,
   Modelo,
+  ModeloVariantes,
   Motivo,
   Peca,
   Plataforma,
